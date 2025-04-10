@@ -1,0 +1,7 @@
+venv/
+
+__pycache__/
+*.pyc
+*.pyo
+
+cc.fr.300.bin
