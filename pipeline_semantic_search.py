@@ -74,13 +74,41 @@ def filtrer_mots_francais(termes):
     return {mot for mot in termes if dico_fr.check(mot)}
 
 
+
+import requests
+
+# Création d'une session persistante
+session = requests.Session()
+
+# 1. Requête vers /token
+def get_access_token():
+    url = "https://preprod-api.lafoirfouille.fr/occ/v2/token"
+
+    response = session.get(url)
+
+    print("Status:", response.status_code)
+    print("Body:", response.text)
+
+    if response.status_code == 200:
+        data = response.json()
+        return data.get("access_token")
+    return None
+
+
+
+
 """LFF API request"""
 
 def fetch_and_display_products(query):
+    token = get_access_token()
+
     url = "https://preprod-api.lafoirfouille.fr/occ/v2/products/search/"
     headers = {
-        "Authorization": "Bearer kJgpo2Fu_cmtWpuhATKBh2MZ_VI"
+    "Authorization": f"Bearer {token}",
+    "Accept": "application/json"
     }
+
+    print(f"Access Token récupéré : {token}")
     params = {"text": query}
     response = requests.get(url, headers=headers, params=params)
 
