@@ -8,3 +8,4 @@ scikit-learn
 tabulate
 fastapi
 uvicorn
+pyenchant

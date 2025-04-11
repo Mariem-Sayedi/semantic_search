@@ -19,38 +19,31 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import sentence_transformers
 import nltk
+from nltk.stem import WordNetLemmatizer
+import enchant
+
+
 
 nltk.download('wordnet') #synonymes
 nltk.download('omw-1.4')
 nltk.download('punkt') #stemming, lemming
 
+spell = SpellChecker(language='fr')
+
+
 """1. spell checking"""
 
-def corriger_requete(query, langue='fr'):
-    spell = SpellChecker(language=langue)
+def corriger_requete(query):
     mots = query.split()
     mots_corrigés = [spell.correction(mot) or mot for mot in mots]
     return " ".join(mots_corrigés)
-
-"""2. getting synonyms"""
-
-def synonym_query(query):
-    words = query.split()
-    expanded_words = set(words)
-    for word in words:
-        synonyms = wn.synsets(word, lang='fra')
-        for syn in synonyms:
-            for lemma in syn.lemmas('fra'):
-                expanded_words.add(lemma.name())
-    return expanded_words
-
 
 
 """3. getting similar words"""
 
 fasttext_model = fasttext.load_model('cc.fr.300.bin')
 
-def get_similar_words(word, k=10):
+def get_similar_words(word, k=5):
     try:
         similar = fasttext_model.get_nearest_neighbors(word, k)
         return [w for _, w in similar]
@@ -60,23 +53,29 @@ def get_similar_words(word, k=10):
 
 """Lemming"""
 
-from nltk.stem import WordNetLemmatizer
 
 lemmatizer = WordNetLemmatizer()
 
-def normaliser_termes(termes):
-    termes_normalisés = set()
+def lemming_termes(termes):
+    termes_lemmés = set()
     for terme in termes:
         lemma = lemmatizer.lemmatize(terme)
-        termes_normalisés.add(lemma)
-    return termes_normalisés
+        termes_lemmés.add(lemma)
+    return termes_lemmés
+
+
+dico_fr = enchant.Dict("fr_FR")
+
+def filtrer_mots_francais(termes):
+    return {mot for mot in termes if dico_fr.check(mot)}
+
 
 """LFF API request"""
 
 def fetch_and_display_products(query):
     url = "https://preprod-api.lafoirfouille.fr/occ/v2/products/search/"
     headers = {
-        "Authorization": "Bearer MsxJVignZomfbtw_Ed6HHJDoCiI"
+        "Authorization": "Bearer kJgpo2Fu_cmtWpuhATKBh2MZ_VI"
     }
     params = {"text": query}
     response = requests.get(url, headers=headers, params=params)
@@ -96,7 +95,7 @@ def fetch_and_display_products(query):
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
-def get_similar_products(product_list, query, threshold=0.3):
+def get_similar_products(product_list, query, threshold=0.5):
     product_names = [product.get('name', '') for product in product_list]
     if not product_names:
         return []
@@ -108,37 +107,48 @@ def get_similar_products(product_list, query, threshold=0.3):
 
     cosine_scores = cosine_similarity(query_embedding, product_embeddings)[0]
 
-    return [
+    results= [
         (product_names[i], float(cosine_scores[i]))
         for i in range(len(product_names))
         if cosine_scores[i] > threshold
     ]
+    results.sort(key=lambda x: x[1], reverse=True)
+    return results
+
+
+
+def filtrer_termes(termes_expansion, mots_principaux):
+    # Garder les termes qui sont plus proches des mots principaux
+    termes_filtres = {terme for terme in termes_expansion if any(mot in terme for mot in mots_principaux)}
+    return termes_filtres
 
 """5. Complete pipeline"""
 
 def traiter_requete(query):
-    print(f"\n requête initiale : {query}")
+    print(f"\nrequête initiale : {query}")
     corrected_query = corriger_requete(query)
     print(f"requête corrigée : {corrected_query}")
 
     mots = re.findall(r'\w+', corrected_query.lower())
-    termes_expansion = set(mots)
+    mots_principaux = set(mots)
 
+    termes_expansion = set(mots)
+    
     for mot in mots:
-        # synonymes
-        synonymes = synonym_query(mot)
-        synonymes_corrigés = {corriger_requete(s).lower() for s in synonymes}
-        termes_expansion.update(synonymes_corrigés)
 
         # voisins fastText
         similaires = get_similar_words(mot)
         similaires_corrigés = {corriger_requete(s).lower() for s in similaires}
         termes_expansion.update(similaires_corrigés)
 
+    print(f"\ntermes d’expansion avant lemming: {termes_expansion}")
+    termes_expansion = lemming_termes(termes_expansion)
+    print(f"\ntermes d’expansion après lemming: {termes_expansion}")
 
-    print(f"\n termes d’expansion avant lemming: {termes_expansion}")
-    termes_expansion = normaliser_termes(termes_expansion)
-    print(f"\n termes d’expansion après lemming: {termes_expansion}")
+    print(f"\ntermes d’expansion avant vérification: {termes_expansion}")
+    termes_expansion = filtrer_mots_francais(termes_expansion)
+    print(f"\ntermes d’expansion après vérification: {termes_expansion}")
+
 
 
     produits_par_terme = {}
@@ -146,22 +156,30 @@ def traiter_requete(query):
 
     for terme in termes_expansion:
         produits = fetch_and_display_products(terme)
-        if not produits:
-            continue
-        produits_par_terme[terme] = []
-        for prod in produits:
-            prod_id = prod.get('code')
-            if prod_id and prod_id not in seen_ids:
-                seen_ids.add(prod_id)
-                produits_par_terme[terme].append(prod)
+        if produits:
+            produits_par_terme[terme] = []
+            for prod in produits:
+                prod_id = prod.get('code')
+                if prod_id and prod_id not in seen_ids:
+                    seen_ids.add(prod_id)
+                    produits_par_terme[terme].append(prod)
+        else:
+            # Si aucun produit n'est trouvé, on cherche parmi les voisins fastText avec k=1
+            voisins = get_similar_words(terme, k=1)  # Limiter à 1 voisin le plus proche
+            for voisin in voisins:
+                produits_voisin = fetch_and_display_products(voisin)
+                if produits_voisin:  # Si le voisin donne des produits, on l'utilise
+                    print(f"Pas de produits pour le terme \"{terme}\". Utilisation du voisin \"{voisin}\".")
+                    produits_par_terme[terme] = produits_voisin
+                    break
 
     if not produits_par_terme:
-        print(" aucun produit trouvé.")
+        print("Aucun produit trouvé.")
         return
 
-    print(f"\n résultats détaillés par terme :")
+    print(f"\nrésultats détaillés par terme :")
     for terme, produits in produits_par_terme.items():
-        print(f"\n terme ➜ \"{terme}\"\n" + "-" * 34)
+        print(f"\nterme ➜ \"{terme}\"\n" + "-" * 34)
         for prod in produits:
             nom = prod.get("name", "Nom indisponible")
             print(f"  produit : {nom}\n ")
@@ -170,9 +188,10 @@ def traiter_requete(query):
     tous_les_produits = [p for prods in produits_par_terme.values() for p in prods]
     résultats = get_similar_products(tous_les_produits, corrected_query)
 
-    print("\n produits similaires à la requête :")
+    print("\nproduits similaires à la requête :")
     for nom, score in résultats:
         print(f"  {nom} --> {score:.4f}")
 
-traiter_requete("téléphoen")
 
+
+traiter_requete("isdtributeur yavon automatiqse")
