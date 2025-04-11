@@ -1,8 +1,24 @@
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
 from typing import List
-from pipeline_semantic_search import corriger_requete, synonym_query, get_similar_words, fetch_and_display_products, get_similar_products, normaliser_termes, filtrer_termes
+from pipeline_semantic_search import corriger_requete, get_similar_words, fetch_and_display_products, get_similar_products, lemming_termes, filtrer_mots_francais
 import re
+import fasttext
+from spellchecker import SpellChecker
+from nltk.corpus import wordnet as wn
+import nltk
+import re
+import requests
+import time
+import pandas as pd
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+import sentence_transformers
+import nltk
+from nltk.stem import WordNetLemmatizer
+import enchant
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
 
 
 app = FastAPI()
@@ -10,6 +26,10 @@ app = FastAPI()
 # Exemple d'entrée (requête utilisateur)
 class QueryModel(BaseModel):
     query: str
+
+
+
+
 
 @app.post("/search/")
 def traiter_recherche(input: QueryModel):
@@ -23,10 +43,6 @@ def traiter_recherche(input: QueryModel):
     termes_expansion = set(mots)
     
     for mot in mots:
-        # synonymes
-        synonymes = synonym_query(mot)
-        synonymes_corrigés = {corriger_requete(s).lower() for s in synonymes}
-        termes_expansion.update(synonymes_corrigés)
 
         # voisins fastText
         similaires = get_similar_words(mot)
@@ -34,18 +50,33 @@ def traiter_recherche(input: QueryModel):
         termes_expansion.update(similaires_corrigés)
 
     print(f"\ntermes d’expansion avant lemming: {termes_expansion}")
-    termes_expansion = normaliser_termes(termes_expansion)
+    termes_expansion = lemming_termes(termes_expansion)
     print(f"\ntermes d’expansion après lemming: {termes_expansion}")
 
-    # Filtrage des termes pour ne garder que les plus pertinents
-    termes_expansion = filtrer_termes(termes_expansion, mots_principaux)
-    termes_expansion = normaliser_termes(termes_expansion)
-    print(f"\ntermes d’expansion après filtrage : {termes_expansion}")
+    print(f"\ntermes d’expansion avant vérification: {termes_expansion}")
+    termes_expansion = filtrer_mots_francais(termes_expansion)
+    print(f"\ntermes d’expansion après vérification: {termes_expansion}")
+
+    # 4bis. Trier les termes par similarité cosinus avec la requête corrigée
+    model_sent = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+    query_embedding = model_sent.encode([corrected_query])[0]
+
+    terme_sim_scores = []
+    for terme in termes_expansion:
+        terme_embedding = model_sent.encode([terme])[0]
+        sim_score = cosine_similarity([query_embedding], [terme_embedding])[0][0]
+        terme_sim_scores.append((terme, sim_score))
+
+    # Tri décroissant
+    termes_tries = [terme for terme, _ in sorted(terme_sim_scores, key=lambda x: x[1], reverse=True)]
+
+    print(f"\n→ Termes triés par similarité cosinus : {termes_tries}")
+
 
     produits_par_terme = {}
     seen_ids = set()
 
-    for terme in termes_expansion:
+    for terme in termes_tries:
         produits = fetch_and_display_products(terme)
         if produits:
             produits_par_terme[terme] = []
@@ -55,8 +86,8 @@ def traiter_recherche(input: QueryModel):
                     seen_ids.add(prod_id)
                     produits_par_terme[terme].append(prod)
         else:
-            # Si aucun produit n'est trouvé, on cherche parmi les voisins fastText
-            voisins = get_similar_words(terme)
+            # si aucun produit n'est trouvé on cherche parmi les voisins fastText avec k=1
+            voisins = get_similar_words(terme, k=1)  # limiter à 1 voisin le plus proche
             for voisin in voisins:
                 produits_voisin = fetch_and_display_products(voisin)
                 if produits_voisin:  # Si le voisin donne des produits, on l'utilise
@@ -82,6 +113,11 @@ def traiter_recherche(input: QueryModel):
     print("\nproduits similaires à la requête :")
     for nom, score in résultats:
         print(f"  {nom} --> {score:.4f}")
+
+    print("\nproduits similaires à la requête :")
+    for nom, score in résultats:
+        print(f"  {nom} --> {score:.4f}")
+
     return {
         "requete_corrigee": corrected_query,
         "termes_expansion": list(termes_expansion),

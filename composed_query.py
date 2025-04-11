@@ -21,10 +21,11 @@ from nltk.corpus import stopwords
 nltk.download('wordnet') #synonymes
 nltk.download('omw-1.4')
 nltk.download('punkt') #lemming
-nltk.download('stopwords')
-stop_words_fr = set(stopwords.words('french'))
 
 
+with open("stopwords_fr.txt", "r", encoding="utf-8") as f:
+    stopwords_fr = set(line.strip().lower() for line in f if line.strip())
+                       
 
 
 spell = SpellChecker(language='fr')
@@ -126,7 +127,7 @@ def filtrer_termes(termes_expansion, mots_principaux):
 
 
 
-def generate_ngrams(query, ngram_range=(1, 3)):
+def generate_ngrams(query, ngram_range=(2, 3)):
     mots = query.split()
     ngrams = set()
     for n in range(ngram_range[0], ngram_range[1]+1):
@@ -138,14 +139,18 @@ def generate_ngrams(query, ngram_range=(1, 3)):
 
 
 
-def retirer_stopwords_ngrams(ngrams):
-    ngrams_filtres = []
+
+def filtrer_ngrams_sensés(ngrams, stopwords):
+    ngrams_filtrés = set()
     for ngram in ngrams:
-        mots = ngram.split()
-        mots_filtres = [mot for mot in mots if mot not in stop_words_fr]
-        if mots_filtres:
-            ngrams_filtres.append(" ".join(mots_filtres))
-    return list(set(ngrams_filtres))  # remove duplicates
+        mots = ngram.lower().split()
+        if all(m in stopwords for m in mots):
+            continue
+        if len(mots) == 2 and (mots[0] in stopwords or mots[-1] in stopwords):
+            continue
+        ngrams_filtrés.add(" ".join(mots))
+    return list(ngrams_filtrés)
+
 
 
 
@@ -161,20 +166,23 @@ def traiter_requete1(query):
     ngrams = generate_ngrams(corrected_query, (1, 3))
     print(f"\n→ N-grammes générés : {ngrams}")
 
-    # 3. Suppression des stop words
-    ngrams = retirer_stopwords_ngrams(ngrams)
-    print(f"\n→ N-grammes après suppression des stop words : {ngrams}")
+
+
+    # 3. Filtrer les n-grammes de manière intelligente
+    ngrams_filtrés = filtrer_ngrams_sensés(ngrams, stopwords_fr)
+    print(f"\n→ stop-words supprimés : {ngrams_filtrés}")
+
 
     # 4. Lemmatisation
-    ngrams = lemming_termes(ngrams)
-    print(f"\n→ Termes après lemmatisation : {ngrams}")
+    ngrams_filtrés = lemming_termes(ngrams_filtrés)
+    print(f"\n→ Termes après lemmatisation : {ngrams_filtrés}")
 
    # 4bis. Trier les termes par similarité cosinus avec la requête corrigée
     model_sent = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
     query_embedding = model_sent.encode([corrected_query])[0]
 
     terme_sim_scores = []
-    for terme in ngrams:
+    for terme in ngrams_filtrés:
         terme_embedding = model_sent.encode([terme])[0]
         sim_score = cosine_similarity([query_embedding], [terme_embedding])[0][0]
         terme_sim_scores.append((terme, sim_score))
@@ -228,4 +236,4 @@ def traiter_requete1(query):
     for nom, score in résultats:
         print(f"  🔎 {nom} → {score:.4f}")
 
-traiter_requete1("meuble sous lavabo")
+traiter_requete1("fauteil")
