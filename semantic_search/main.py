@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
 from typing import List
-from pipeline_semantic_search import corriger_requete, get_similar_words, fetch_and_display_products, get_similar_products, lemming_termes, filtrer_mots_francais
+from semantic_search.pipeline_semantic_search import corriger_requete, get_similar_words, fetch_and_display_products, get_similar_products, lemming_termes, filtrer_mots_francais
 import re
 import fasttext
 from spellchecker import SpellChecker
