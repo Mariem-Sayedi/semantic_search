@@ -79,7 +79,7 @@ def filtrer_mots_francais(termes):
 
 
 
-# Création d'une session persistante
+# création d'une session persistante
 session = requests.Session()
 
 def get_access_token():
@@ -101,7 +101,7 @@ def fetch_and_display_products(query):
     access_token = get_access_token()
     url = "https://preprod-api.lafoirfouille.fr/occ/v2/products/search/"
     headers = {
-        "Authorization": "Bearer {access_token}"
+        "Authorization": f"Bearer {access_token}"
     }
     params = {"text": query}
     response = requests.get(url, headers=headers, params=params)
@@ -258,4 +258,12 @@ def traiter_requete1(query):
     for nom, score in résultats:
         print(f"  {nom} → {score:.4f}")
 
-traiter_requete1("taouret cuisien haut")
+
+
+
+
+start_time = time.time()
+traiter_requete1("joeut éucatif ")
+end_time = time.time()
+processing_time = end_time - start_time
+print(f"\n Temps de traitement : {processing_time:.2f} secondes")

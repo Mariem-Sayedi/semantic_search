@@ -86,11 +86,11 @@ def traiter_recherche(input: QueryModel):
                     seen_ids.add(prod_id)
                     produits_par_terme[terme].append(prod)
         else:
-            # si aucun produit n'est trouvé on cherche parmi les voisins fastText avec k=1
-            voisins = get_similar_words(terme, k=1)  # limiter à 1 voisin le plus proche
+           
+            voisins = get_similar_words(terme, k=1)  
             for voisin in voisins:
                 produits_voisin = fetch_and_display_products(voisin)
-                if produits_voisin:  # Si le voisin donne des produits, on l'utilise
+                if produits_voisin:  
                     print(f"Pas de produits pour le terme \"{terme}\". Utilisation du voisin \"{voisin}\".")
                     produits_par_terme[terme] = produits_voisin
                     break

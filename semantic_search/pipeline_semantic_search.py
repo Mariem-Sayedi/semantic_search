@@ -235,4 +235,4 @@ def traiter_requete(query):
 
 
 
-traiter_requete("table blanche")
+traiter_requete("vjissnlle")
