@@ -4,9 +4,11 @@ nltk
 pandas
 numpy
 sentence-transformers
+#############
 scikit-learn
 tabulate
 fastapi
 uvicorn
 pyenchant
 rich
+matplotlib

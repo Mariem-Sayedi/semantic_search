@@ -1,17 +1,10 @@
 from fastapi import FastAPI
-from app.models import Product, User
-from app.scoring import calculate_score
+from app.api.endpoints import router
 
+app = FastAPI(
+    title="LFF Recommendation API",
+    description="API de personnalisation de recherche",
+    version="1.0"
+)
 
-app = FastAPI()
-
-@app.post("/ranking/")
-def rank_products(user: User, products: list[Product]):
-    # Appliquer le ranking
-    scored = [
-        {"product": p, "score": calculate_score(p, user, context={}, date=today, weights=default_weights)}
-        for p in products
-    ]
-    # Trier par score
-    ranked = sorted(scored, key=lambda x: x["score"], reverse=True)
-    return ranked
+app.include_router(router)
