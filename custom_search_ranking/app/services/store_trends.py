@@ -4,10 +4,9 @@ import pandas as pd
 DB_PATH = "custom_search_ranking/app/data/LFF.db"
 
 
-def compute_product_views_score(store_id: str) -> pd.DataFrame:
+def compute_product_views_score() -> pd.DataFrame:
     with sqlite3.connect(DB_PATH) as conn:
         df = pd.read_sql_query("SELECT product_id, store_id FROM product_views", conn)
-    df = df[df['store_id'] == store_id]
     counts = df['product_id'].value_counts().reset_index()
     counts.columns = ['product_id', 'views']
     nb_views = counts['views'].sum()
@@ -16,10 +15,9 @@ def compute_product_views_score(store_id: str) -> pd.DataFrame:
     return counts[['product_id', 'views_score']]
 
 
-def compute_category_views_score(store_id: str) -> pd.DataFrame:
+def compute_category_views_score() -> pd.DataFrame:
     with sqlite3.connect(DB_PATH) as conn:
         df = pd.read_sql_query("SELECT category, store_id FROM category_views", conn)
-    df = df[df['store_id'] == store_id]
     counts = df['category'].value_counts().reset_index()
     counts.columns = ['category', 'views']
     nb_views = counts['views'].sum()
@@ -29,10 +27,10 @@ def compute_category_views_score(store_id: str) -> pd.DataFrame:
 
 
 
-def compute_cart_score(store_id: str) -> pd.DataFrame:
+def compute_cart_score() -> pd.DataFrame:
     with sqlite3.connect(DB_PATH) as conn:
-        df = pd.read_sql_query("SELECT product_id, store_id, event_type FROM cart_purchases", conn)
-    df = df[(df['store_id'] == store_id) & (df['event_type'] == 'add_to_cart')]
+        df = pd.read_sql_query("SELECT product_id, event_type FROM cart_purchases", conn)
+    df = df[(df['event_type'] == 'add_to_cart')]
     counts = df['product_id'].value_counts().reset_index()
     counts.columns = ['product_id', 'cart_adds']
     nb_cart = counts['cart_adds'].sum()
@@ -43,10 +41,10 @@ def compute_cart_score(store_id: str) -> pd.DataFrame:
 
 
 
-def compute_purchase_score(store_id: str) -> pd.DataFrame:
+def compute_purchase_score() -> pd.DataFrame:
     with sqlite3.connect(DB_PATH) as conn:
-        df = pd.read_sql_query("SELECT product_id, store_id, event_type FROM cart_purchases", conn)
-    df = df[(df['store_id'] == store_id) & (df['event_type'] == 'purchase')]
+        df = pd.read_sql_query("SELECT product_id, event_type FROM cart_purchases", conn)
+    df = df[(df['event_type'] == 'purchase')]
     counts = df['product_id'].value_counts().reset_index()
     counts.columns = ['product_id', 'purchases']
     nb_cart = counts['purchases'].sum()
@@ -57,10 +55,10 @@ def compute_purchase_score(store_id: str) -> pd.DataFrame:
 
 
 
-def compute_combined_trend_score(store_id: str) -> pd.DataFrame:
-    df_views = compute_product_views_score(store_id)
-    df_cart = compute_cart_score(store_id)
-    df_purchase = compute_purchase_score(store_id)
+def compute_combined_trend_score() -> pd.DataFrame:
+    df_views = compute_product_views_score()
+    df_cart = compute_cart_score()
+    df_purchase = compute_purchase_score()
 
     
     df = df_views.merge(df_cart, on='product_id', how='outer')
@@ -77,14 +75,10 @@ def compute_combined_trend_score(store_id: str) -> pd.DataFrame:
     )
     return df.sort_values(by='score_trend', ascending=False)
 
-
-
-
-
 if __name__ == "__main__":
 
     store_id = "0414"
 
-    trend_df = compute_combined_trend_score(store_id)
-    print("\n produits tendance par type d'interaction (store", store_id, ")")
+    trend_df = compute_combined_trend_score()
+    print("\n produits tendance par type d'interaction")
     print(trend_df.head(10))
