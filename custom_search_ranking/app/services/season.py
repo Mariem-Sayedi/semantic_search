@@ -1,6 +1,7 @@
 import pandas as pd
 from datetime import datetime, timedelta, timezone
 import sqlite3
+pd.set_option("display.float_format", "{:.3f}".format)
 
 def calculate_week_store(product_id: str, df: pd.DataFrame, current_date: datetime) -> float:
     df['timestamp'] = pd.to_datetime(df['timestamp'])
@@ -34,5 +35,5 @@ current_date = datetime.now(timezone.utc)
 df_cart = pd.read_sql_query("SELECT product_id, timestamp FROM cart_purchases", conn)
 conn.close()
 
-score = total_saison_score("10000556466", df_cart, current_date)
-print(f" Score trimestriel pour 10000556466 : {score:.4f}")
+score = total_saison_score("10000259220", df_cart, current_date)
+print(f" Score trimestriel pour 10000259220 : {score:.4f}")

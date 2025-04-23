@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.decomposition import TruncatedSVD
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
+pd.set_option("display.float_format", "{:.3f}".format)
 
 
 db_path = 'custom_search_ranking/app/data/LFF.db'

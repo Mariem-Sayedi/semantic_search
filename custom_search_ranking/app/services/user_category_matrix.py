@@ -4,6 +4,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 from sklearn.decomposition import TruncatedSVD
 from sklearn.preprocessing import MinMaxScaler
+pd.set_option("display.float_format", "{:.3f}".format)
 
 
 db_path = 'custom_search_ranking/app/data/LFF.db'
