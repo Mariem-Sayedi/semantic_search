@@ -96,6 +96,14 @@ def plot_score_comparison(scores_cos_scaled, scores_svd, save_path="score_compar
     print(f"graphe sauvegardé ici : {save_path}")
 
 
+def print_user_history(user_guid: str, matrix: pd.DataFrame):
+    if user_guid not in matrix.index:
+        print(f"Aucune interaction trouvée pour l'utilisateur {user_guid}")
+    else:
+        print(f"\nProduits vus/achetés par {user_guid} :")
+        print(matrix.loc[user_guid][matrix.loc[user_guid] > 0])
+
+
 
 if __name__ == "__main__":
     df_all = load_views_from_db(db_path)
@@ -105,8 +113,8 @@ if __name__ == "__main__":
     print("Matrice d'interaction :\n", matrix)
     print("\nMatrice de similarité :\n", similarity_matrix)
 
-    user_guid = "d005cb3992d9b3471f77b2eb2b854afa0d716cd0c793c5fe4d00f293a3855a8b"
-    product_id = "10000106050"
+    user_guid = "9f2bace64e9acd27ae936110a3738c137a6cfa5073b637f1819554e8ab8a5aa1"
+    product_id = "10000269636"
 
     score = score_collaboratif(product_id, user_guid, matrix, similarity_matrix)
     print(f"\nScore collaboratif de {user_guid} pour {product_id} : {score:.4f}")

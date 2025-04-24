@@ -5,20 +5,49 @@ DB_PATH = "custom_search_ranking/app/data/LFF.db"
 pd.set_option("display.float_format", "{:.3f}".format)
 
 
+
+def get_top_viewed_products(top_n):
+    conn = sqlite3.connect(DB_PATH)
+    df = pd.read_sql_query("SELECT product_id FROM product_views", conn)
+    conn.close()
+    top_products = df['product_id'].value_counts().reset_index()
+    top_products.columns = ['product_id', 'views']
+    return top_products.head(top_n)
+
+
+def get_top_added_to_cart_products(top_n):
+    conn = sqlite3.connect(DB_PATH)
+    df = pd.read_sql_query("SELECT product_id, event_type FROM cart_purchases", conn)
+    conn.close()
+    added = df[df['event_type'] == 'add_to_cart']['product_id'].value_counts().reset_index()
+    added.columns = ['product_id', 'added_to_cart']
+    return added.head(top_n)
+
+
+def get_top_purchased_products(top_n):
+    conn = sqlite3.connect(DB_PATH)
+    df = pd.read_sql_query("SELECT product_id, event_type FROM cart_purchases", conn)
+    conn.close()
+    purchased = df[df['event_type'] == 'purchase']['product_id'].value_counts().reset_index()
+    purchased.columns = ['product_id', 'purchased']
+    return purchased.head(top_n)
+
+
+
 def compute_product_views_score() -> pd.DataFrame:
     with sqlite3.connect(DB_PATH) as conn:
-        df = pd.read_sql_query("SELECT product_id, store_id FROM product_views", conn)
+        df = pd.read_sql_query("SELECT product_id FROM product_views", conn)
     counts = df['product_id'].value_counts().reset_index()
     counts.columns = ['product_id', 'views']
-    nb_views = counts['views'].sum()
-    print("max_views", nb_views)
-    counts['views_score'] = counts['views'] / nb_views
+    global_nb_views = counts['views'].sum()
+    print("LFF nb_views", global_nb_views)
+    counts['views_score'] = counts['views'] / global_nb_views
     return counts[['product_id', 'views_score']]
 
 
 def compute_category_views_score() -> pd.DataFrame:
     with sqlite3.connect(DB_PATH) as conn:
-        df = pd.read_sql_query("SELECT category, store_id FROM category_views", conn)
+        df = pd.read_sql_query("SELECT category FROM category_views", conn)
     counts = df['category'].value_counts().reset_index()
     counts.columns = ['category', 'views']
     nb_views = counts['views'].sum()
@@ -70,13 +99,18 @@ def compute_global_trend_score() -> pd.DataFrame:
 
     
     df['score_trend'] = (
-        0.3 * df['views_score'] +
-        0.5 * df['cart_score'] +
-        0.8 * df['purchase_score']
+        3 * df['views_score'] +
+        5 * df['cart_score'] +
+        8 * df['purchase_score']
     )
     return df.sort_values(by='score_trend', ascending=False)
 
 if __name__ == "__main__":
+    print("\n Top Produits vus :")
+    print(get_top_viewed_products(5))
+
+    print("\n Top Produits ajoutés au panier :")
+    print(get_top_added_to_cart_products(5))
 
 
     trend_df = compute_global_trend_score()
