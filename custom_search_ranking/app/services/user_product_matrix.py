@@ -111,7 +111,7 @@ if __name__ == "__main__":
     similarity_matrix = compute_user_similarity_matrix(matrix)
 
     print("Matrice d'interaction :\n", matrix)
-    print("\nMatrice de similarité :\n", similarity_matrix)
+    print("\n Matrice de similarité :\n", similarity_matrix)
 
     user_guid = "9f2bace64e9acd27ae936110a3738c137a6cfa5073b637f1819554e8ab8a5aa1"
     product_id = "10000269636"
@@ -135,8 +135,8 @@ if __name__ == "__main__":
 
     try:
         idx = list(products).index(product_id)
-        print(f"\nScore collaboratif après normalisation de {user_guid} pour {product_id} : {scores_cos_scaled[idx]:.4f}")
+        print(f"\n score collaboratif après normalisation de {user_guid} pour {product_id} : {scores_cos_scaled[idx]:.4f}")
     except ValueError:
-        print("\nProduit non trouvé dans les colonnes pour affichage du score normalisé.")
+        print("\n produit non trouvé dans les colonnes pour affichage du score normalisé.")
 
     plot_score_comparison(scores_cos_scaled, scores_svd)

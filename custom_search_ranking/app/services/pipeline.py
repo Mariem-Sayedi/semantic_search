@@ -2,6 +2,7 @@ import pandas as pd
 import requests
 import sqlite3
 from datetime import datetime, timezone
+from user_interaction import compute_normalized_user_interaction_scores
 
 from promo_scoring import compute_score_promotion, get_access_token
 from user_product_matrix import (
@@ -93,14 +94,24 @@ def personalized_ranking(user_guid: str, query: str, store_id: str) -> pd.DataFr
     df_products['score_global_trend'] = df_products['score_global_trend'].fillna(0)
 
 
-    # 7. Calcul score final pondéré
+
+    # 7. Score navigation client
+    df_user_inter = compute_normalized_user_interaction_scores()
+    df_user_inter = df_user_inter[df_user_inter['user_guid'] == user_guid]
+
+    df_products = df_products.merge(df_user_inter[['product_id', 'score_navigation_client']], 
+                                    on='product_id', how='left')
+    df_products['score_navigation_client'] = df_products['score_navigation_client'].fillna(0)
+
+     # 8. Calcul score final pondéré
     df_products['final_score'] = (
         5 * df_products['score_promotion'] +
         0.2 * df_products['score_collaboratif'] +
         0.2 * df_products['score_svd'] +
         0.2 * df_products['score_saison'] +
         0.1 * df_products['score_local_trend'] + 
-        0.1 * df_products['score_global_trend']
+        0.1 * df_products['score_global_trend'] + 
+        0.3 * df_products['score_navigation_client']
     )
 
     return df_products.sort_values(by="final_score", ascending=False)
@@ -108,11 +119,11 @@ def personalized_ranking(user_guid: str, query: str, store_id: str) -> pd.DataFr
 
 if __name__ == "__main__":
     ranking = personalized_ranking(
-        user_guid="235127e022357f07db409007dfe726ff9ba2aa82506e9508ef9cb43cc3b03370",
-        query="portefeuille",
+        user_guid="06f5c30584b25c685b3d04d4de85fba6fbe087f0534d64bb5af6876f155c92f2",
+        query="chaise",
         store_id="0414"
     )
-    print(ranking[['product_id', 'final_score', 'score_svd', 'score_promotion', 'score_collaboratif', 'score_local_trend', 'score_global_trend', 'score_saison']])
+    print(ranking[['product_id', 'final_score', 'score_svd', 'score_promotion', 'score_collaboratif', 'score_local_trend', 'score_global_trend', 'score_saison', 'score_navigation_client']])
 
 
 #3a8ea2b9a7be61cb3633dbea6059fc1bb90f0328d006b9201455198fc8eaae40    

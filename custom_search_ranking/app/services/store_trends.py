@@ -18,6 +18,18 @@ def compute_product_views_score(store_id: str) -> pd.DataFrame:
     return counts[['product_id', 'views_score']]
 
 
+
+def get_top_viewed_products(top_n):
+    conn = sqlite3.connect(DB_PATH)
+    df = pd.read_sql_query("SELECT product_id FROM product_views", conn)
+    conn.close()
+    top_products = df['product_id'].value_counts().reset_index()
+    top_products.columns = ['product_id', 'views']
+    return top_products.head(top_n)
+
+
+
+
 def compute_category_views_score(store_id: str) -> pd.DataFrame:
     with sqlite3.connect(DB_PATH) as conn:
         df = pd.read_sql_query("SELECT category, store_id FROM category_views", conn)
