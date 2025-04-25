@@ -12,3 +12,4 @@ uvicorn
 pyenchant
 rich
 matplotlib
+metarank

@@ -1,0 +1,19 @@
+data:
+  source: events.jsonl
+  format: jsonl
+
+features:
+  - name: query
+    scope: item
+    source: fields.query
+    type: string
+
+  - name: relevancy_score
+    scope: item
+    source: items.fields.relevancy_score
+    type: numeric
+
+model:
+  type: ltr
+  backend: lightgbm
+  iterations: 50

@@ -1,9 +1,8 @@
-import pandas as pd
 import requests
 import sqlite3
 from datetime import datetime, timezone
 from user_interaction import compute_normalized_user_interaction_scores
-
+import pandas as pd
 from promo_scoring import compute_score_promotion, get_access_token
 from user_product_matrix import (
     load_views_from_db, 
@@ -123,6 +122,9 @@ if __name__ == "__main__":
         query="chaise",
         store_id="0414"
     )
+    ranking_list = ranking['product_id'].tolist()
+    print("ranking_list", ranking_list)
+    print("****************************************************************************************************************************************")
     print(ranking[['product_id', 'final_score', 'score_svd', 'score_promotion', 'score_collaboratif', 'score_local_trend', 'score_global_trend', 'score_saison', 'score_navigation_client']])
 
 
