@@ -40,7 +40,7 @@ def compute_product_views_score() -> pd.DataFrame:
     counts = df['product_id'].value_counts().reset_index()
     counts.columns = ['product_id', 'views']
     global_nb_views = counts['views'].sum()
-    print("Total_LFF_nb_views", global_nb_views)
+    # print("Total_LFF_nb_views", global_nb_views)
     counts['views_score'] = counts['views'] / global_nb_views
     return counts[['product_id', 'views_score']]
 

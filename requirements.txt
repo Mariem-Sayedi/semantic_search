@@ -12,4 +12,6 @@ uvicorn
 pyenchant
 rich
 matplotlib
-metarank
+xgboost
+tqdm
+requests

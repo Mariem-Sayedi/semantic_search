@@ -11,7 +11,7 @@ from user_product_matrix import (
     score_collaboratif, 
     compute_svd_scores, 
     score_svd,
-    print_user_history
+    # print_user_history
 )
 from season import total_saison_score
 from store_trends import compute_local_trend_score
@@ -59,7 +59,7 @@ def personalized_ranking(user_guid: str, query: str, store_id: str) -> pd.DataFr
     # 3. Chargement données user pour score collaboratif / SVD
     df_all = load_views_from_db(DB_PATH)
     matrix = build_user_product_matrix_from_df(df_all)
-    print_user_history(user_guid, matrix)
+    # print_user_history(user_guid, matrix)
     sim_matrix = compute_user_similarity_matrix(matrix)
     svd_matrix = compute_svd_scores(matrix)
 
@@ -123,7 +123,6 @@ if __name__ == "__main__":
         store_id="0414"
     )
     ranking_list = ranking['product_id'].tolist()
-    print("ranking_list", ranking_list)
     print("****************************************************************************************************************************************")
     print(ranking[['product_id', 'final_score', 'score_svd', 'score_promotion', 'score_collaboratif', 'score_local_trend', 'score_global_trend', 'score_saison', 'score_navigation_client']])
 

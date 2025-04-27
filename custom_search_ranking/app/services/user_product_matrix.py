@@ -96,12 +96,13 @@ def plot_score_comparison(scores_cos_scaled, scores_svd, save_path="score_compar
     print(f"graphe sauvegardé ici : {save_path}")
 
 
-def print_user_history(user_guid: str, matrix: pd.DataFrame):
-    if user_guid not in matrix.index:
-        print(f"Aucune interaction trouvée pour l'utilisateur {user_guid}")
-    else:
-        print(f"\nProduits vus/achetés par {user_guid} :")
-        print(matrix.loc[user_guid][matrix.loc[user_guid] > 0])
+# def print_user_history(user_guid: str, matrix: pd.DataFrame):
+#     if user_guid not in matrix.index:
+#         print(f"Aucune interaction trouvée pour l'utilisateur {user_guid}")
+#     else:
+#         # print(f"\nProduits vus/achetés par {user_guid} :")
+#         print(matrix.loc[user_guid][matrix.loc[user_guid] > 0])
+        
 
 
 

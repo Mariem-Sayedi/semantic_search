@@ -13,7 +13,7 @@ def compute_product_views_score(store_id: str) -> pd.DataFrame:
     counts = df['product_id'].value_counts().reset_index()
     counts.columns = ['product_id', 'views']
     local_nb_views = counts['views'].sum()
-    print("local_store_nb_views", local_nb_views)
+    # print("local_store_nb_views", local_nb_views)
     counts['views_score'] = counts['views'] / local_nb_views
     return counts[['product_id', 'views_score']]
 

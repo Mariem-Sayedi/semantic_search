@@ -10,9 +10,6 @@ def get_access_token():
 
     response = session.get(url)
 
-    print("Status:", response.status_code)
-    print("Body:", response.text)
-
     if response.status_code == 200:
         data = response.json()
         return data.get("access_token")
