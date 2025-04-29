@@ -5,12 +5,12 @@ import numpy as np
 from sklearn.decomposition import TruncatedSVD
 from sklearn.preprocessing import MinMaxScaler
 pd.set_option("display.float_format", "{:.3f}".format)
+from constants import DB_PATH
 
 
-db_path = 'custom_search_ranking/app/data/LFF.db'
 
 def load_viewed_categories_from_db(db_path: str) -> pd.DataFrame:
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(DB_PATH)
     query = "SELECT user_guid, category FROM category_views"
     df = pd.read_sql_query(query, conn)
     conn.close()

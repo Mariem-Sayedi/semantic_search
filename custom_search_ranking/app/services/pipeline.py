@@ -13,12 +13,12 @@ from user_product_matrix import (
     score_svd,
     # print_user_history
 )
-from season import total_saison_score
+from custom_search_ranking.app.services.season_scoring import total_saison_score
 from store_trends import compute_local_trend_score
 from LFF_trends import compute_global_trend_score
+from constants import DB_PATH
 
 
-DB_PATH = "custom_search_ranking/app/data/LFF.db"
 
 
 def fetch_products_from_api(query: str, store_id: str) -> pd.DataFrame:
@@ -118,12 +118,12 @@ def personalized_ranking(user_guid: str, query: str, store_id: str) -> pd.DataFr
 
 if __name__ == "__main__":
     ranking = personalized_ranking(
-        user_guid="06f5c30584b25c685b3d04d4de85fba6fbe087f0534d64bb5af6876f155c92f2",
-        query="chaise",
+        user_guid="ac240ae19b9b901c1f8c6addf412f1ee138604021b3dd94fd155e1155ca07be1",
+        query="console",
         store_id="0414"
     )
     ranking_list = ranking['product_id'].tolist()
-    print("****************************************************************************************************************************************")
+    print("*************calcul du score de ranking avec la somme pondérée******************")
     print(ranking[['product_id', 'final_score', 'score_svd', 'score_promotion', 'score_collaboratif', 'score_local_trend', 'score_global_trend', 'score_saison', 'score_navigation_client']])
 
 

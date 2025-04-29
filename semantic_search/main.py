@@ -70,7 +70,7 @@ def traiter_recherche(input: QueryModel):
     # Tri décroissant
     termes_tries = [terme for terme, _ in sorted(terme_sim_scores, key=lambda x: x[1], reverse=True)]
 
-    print(f"\n→ Termes triés par similarité cosinus : {termes_tries}")
+    print(f"\n Termes triés par similarité cosinus : {termes_tries}")
 
 
     produits_par_terme = {}
@@ -99,7 +99,7 @@ def traiter_recherche(input: QueryModel):
         print("Aucun produit trouvé.")
         return
 
-    print(f"\nrésultats détaillés par terme :")
+    print(f"\n résultats détaillés par terme :")
     for terme, produits in produits_par_terme.items():
         print(f"\nterme ➜ \"{terme}\"\n" + "-" * 34)
         for prod in produits:

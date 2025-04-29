@@ -1,9 +1,12 @@
 import sqlite3
 import pandas as pd
+from app.services.constants import DB_PATH
+
+
+
 pd.set_option("display.float_format", "{:.3f}".format)
 
 
-DB_PATH = "custom_search_ranking/app/data/LFF.db"
 
 
 def compute_product_views_score(store_id: str) -> pd.DataFrame:

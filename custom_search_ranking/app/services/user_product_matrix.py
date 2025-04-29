@@ -5,14 +5,16 @@ import numpy as np
 from sklearn.decomposition import TruncatedSVD
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
+from app.services.constants import DB_PATH
+
+
+
 pd.set_option("display.float_format", "{:.3f}".format)
 
 
-db_path = 'custom_search_ranking/app/data/LFF.db'
-
 
 def load_views_from_db(db_path: str) -> pd.DataFrame:
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(DB_PATH)
 
     product_query = "SELECT user_guid, product_id FROM product_views"
     cart_purchase_query = "SELECT user_guid, product_id, event_type FROM cart_purchases"
@@ -107,7 +109,7 @@ def plot_score_comparison(scores_cos_scaled, scores_svd, save_path="score_compar
 
 
 if __name__ == "__main__":
-    df_all = load_views_from_db(db_path)
+    df_all = load_views_from_db(DB_PATH)
     matrix = build_user_product_matrix_from_df(df_all)
     similarity_matrix = compute_user_similarity_matrix(matrix)
 
@@ -141,3 +143,4 @@ if __name__ == "__main__":
         print("\n produit non trouvé dans les colonnes pour affichage du score normalisé.")
 
     plot_score_comparison(scores_cos_scaled, scores_svd)
+
