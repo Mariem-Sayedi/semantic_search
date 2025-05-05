@@ -182,18 +182,19 @@ def traiter_requete(query):
         return
     # Similarité cosinus avec la requête
     résultats = get_similar_products(produits, corrected_query)
+    print("résultats"  , résultats)
     if produits:
       return {
         "corrected_query": corrected_query,
         "expanded_terms": termes_tries,
-        "ranked_products": pd.DataFrame(résultats)
+        "products": pd.DataFrame(résultats)
       }
     else:
       return {
         "corrected_query": corrected_query,
         "expanded_terms": termes_tries,
-        "ranked_products": pd.DataFrame()
+        "products": pd.DataFrame()
       }
 
 
-traiter_requete("cafetiree")
+traiter_requete("table")

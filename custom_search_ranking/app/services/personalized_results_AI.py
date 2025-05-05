@@ -27,6 +27,10 @@ def personalize_ranking(user_guid: str, df_products: pd.DataFrame, store_id: str
     print("df_produits", df_products)
     df_products.rename(columns={"code": "product_id"}, inplace=True)
 
+    df_products['promo_rate'] = df_products['storeStockPrice'].apply(
+    lambda x: x.get('promoRate') if isinstance(x, dict) else None
+)
+
     # 1. Score de promotion
     df_products['score_promotion'] = df_products['promo_rate'].apply(compute_score_promotion)
 
