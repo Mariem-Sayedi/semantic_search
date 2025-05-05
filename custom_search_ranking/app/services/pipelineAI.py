@@ -1,10 +1,10 @@
 import requests
 import sqlite3
 from datetime import datetime, timezone
-from app.services.user_interaction import compute_normalized_user_interaction_scores
+from custom_search_ranking.app.services.user_interaction import compute_normalized_user_interaction_scores
 import pandas as pd
-from app.services.promo_scoring import compute_score_promotion
-from app.services.user_product_matrix import (
+from custom_search_ranking.app.services.promo_scoring import compute_score_promotion
+from custom_search_ranking.app.services.user_product_matrix import (
     load_views_from_db, 
     build_user_product_matrix_from_df,
     compute_user_similarity_matrix, 
@@ -13,12 +13,12 @@ from app.services.user_product_matrix import (
     score_svd,
     # print_user_history
 )
-from app.services.season_scoring import total_saison_score
-from app.services.store_trends import compute_local_trend_score
-from app.services.LFF_trends import compute_global_trend_score
-from app.services.predict_ranker import predict_with_model
-from app.services.constants import RANKING_MODEL_PATH_JSON, DB_PATH
-from app.services.search_products_api import fetch_products_from_api
+from custom_search_ranking.app.services.season_scoring import total_season_score
+from custom_search_ranking.app.services.store_trends import compute_local_trend_score
+from custom_search_ranking.app.services.LFF_trends import compute_global_trend_score
+from custom_search_ranking.app.services.predict_ranker import predict_with_model
+from custom_search_ranking.app.services.constants import RANKING_MODEL_PATH_JSON, DB_PATH
+from custom_search_ranking.app.services.search_products_api import fetch_products_from_api
 
 
 
@@ -56,8 +56,8 @@ def personalized_ranking(user_guid: str, query: str, store_id: str) -> pd.DataFr
     df_cart = pd.read_sql_query("SELECT product_id, timestamp FROM cart_purchases", conn)
     conn.close()
     now = datetime.now(timezone.utc)
-    df_products['score_saison'] = df_products['product_id'].apply(
-        lambda pid: total_saison_score(pid, df_cart.copy(), now)
+    df_products['score_season'] = df_products['product_id'].apply(
+        lambda pid: total_season_score(pid, df_cart.copy(), now)
     )
 
     # 5 score de tendance locale
@@ -92,13 +92,13 @@ def personalized_ranking(user_guid: str, query: str, store_id: str) -> pd.DataFr
 
 if __name__ == "__main__":
     ranking = personalized_ranking(
-        user_guid="14d5ac3b356357ccb88bab0e3a14e69e357343ecf485816f012fd6f8afd703cb",
-        query="console",
-        store_id="0414"
+        user_guid="b52b4e3cc61d597266d3156a1948406265df0713af92f7cd46a88bc69c0ae143",
+        query="table",
+        store_id="0008"
     )
     ranking_list = ranking['product_id'].tolist()
     print("**********************Prédiction avec XGBoost***************************")
-    print(ranking[['product_id', 'predicted_score', 'score_svd', 'score_promotion', 'score_collaboratif', 'score_local_trend', 'score_global_trend', 'score_saison', 'score_navigation_client']])
+    print(ranking[['product_id', 'predicted_score', 'score_svd', 'score_promotion', 'score_collaboratif', 'score_local_trend', 'score_global_trend', 'score_season', 'score_navigation_client']])
 
 
 #3a8ea2b9a7be61cb3633dbea6059fc1bb90f0328d006b9201455198fc8eaae40    

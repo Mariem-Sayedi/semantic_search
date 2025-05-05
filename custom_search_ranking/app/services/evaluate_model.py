@@ -3,8 +3,8 @@ import numpy as np
 import xgboost as xgb
 from sklearn.metrics import ndcg_score
 import matplotlib.pyplot as plt
-from predict_ranker import predict_with_model
-from constants import RANKING_MODEL_PATH, TRAINING_DATA_PATH
+from custom_search_ranking.app.services.predict_ranker import predict_with_model
+from custom_search_ranking.app.services.constants import RANKING_MODEL_PATH, TRAINING_DATA_PATH
 
 
 
@@ -14,7 +14,7 @@ def evaluate_per_user(df, model_path):
         'score_promotion', 
         'score_collaboratif', 
         'score_svd', 
-        'score_saison', 
+        'score_season', 
         'score_local_trend', 
         'score_global_trend', 
         'score_navigation_client'

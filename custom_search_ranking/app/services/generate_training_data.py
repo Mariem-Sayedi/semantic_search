@@ -4,7 +4,7 @@ from pipeline import personalized_ranking
 from tqdm import tqdm
 import time
 import os
-from constants import DB_PATH, PROCESSED_USERS_FILE
+from custom_search_ranking.app.services.constants import DB_PATH, PROCESSED_USERS_FILE
 
 
 
@@ -55,7 +55,7 @@ def generate_training_data(df_search_queries: pd.DataFrame):
         # partie full training data
         df_partial = df[[
             'product_id', 'score_promotion', 'score_collaboratif', 'score_svd',
-            'score_saison', 'score_local_trend', 'score_global_trend', 'score_navigation_client', 'final_score'
+            'score_season', 'score_local_trend', 'score_global_trend', 'score_navigation_client', 'final_score'
         ]].copy()
         df_partial['user_guid'] = user_guid
         df_partial['search_query'] = search_query

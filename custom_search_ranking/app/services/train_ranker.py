@@ -12,7 +12,7 @@ features = [
     'score_promotion', 
     'score_collaboratif', 
     'score_svd',
-    'score_saison', 
+    'score_season', 
     'score_local_trend', 
     'score_global_trend', 
     'score_navigation_client'

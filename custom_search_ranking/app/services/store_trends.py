@@ -1,6 +1,6 @@
 import sqlite3
 import pandas as pd
-from app.services.constants import DB_PATH
+from custom_search_ranking.app.services.constants import DB_PATH
 
 
 

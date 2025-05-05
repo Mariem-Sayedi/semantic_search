@@ -1,6 +1,6 @@
-from app.services.user_product_matrix import load_views_from_db
+from custom_search_ranking.app.services.user_product_matrix import load_views_from_db
 import pandas as pd
-from app.services.constants import DB_PATH
+from custom_search_ranking.app.services.constants import DB_PATH
 
 
 

@@ -1,5 +1,5 @@
 import pandas as pd
-from app.services.search_products_api import fetch_products_from_api
+from custom_search_ranking.app.services.search_products_api import fetch_products_from_api
 
 pd.set_option("display.float_format", "{:.3f}".format)
 

@@ -23,4 +23,4 @@ uvicorn main:app --reload
 
 
 **. Tester dans swagger **
-http://127.0.0.1:8000/docs
+http://127.0.0.1:8080/docs

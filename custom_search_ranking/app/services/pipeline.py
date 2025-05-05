@@ -1,10 +1,10 @@
 import requests
 import sqlite3
 from datetime import datetime, timezone
-from user_interaction import compute_normalized_user_interaction_scores
+from custom_search_ranking.app.services.user_interaction import compute_normalized_user_interaction_scores
 import pandas as pd
-from promo_scoring import compute_score_promotion, get_access_token
-from user_product_matrix import (
+from custom_search_ranking.app.services.promo_scoring import compute_score_promotion
+from custom_search_ranking.app.services.user_product_matrix import (
     load_views_from_db, 
     build_user_product_matrix_from_df,
     compute_user_similarity_matrix, 
@@ -13,35 +13,12 @@ from user_product_matrix import (
     score_svd,
     # print_user_history
 )
-from custom_search_ranking.app.services.season_scoring import total_saison_score
-from store_trends import compute_local_trend_score
-from LFF_trends import compute_global_trend_score
-from constants import DB_PATH
+from custom_search_ranking.app.services.season_scoring import total_season_score
+from custom_search_ranking.app.services.store_trends import compute_local_trend_score
+from custom_search_ranking.app.services.LFF_trends import compute_global_trend_score
+from custom_search_ranking.app.services.constants import DB_PATH
+from custom_search_ranking.app.services.search_products_api import fetch_products_from_api
 
-
-
-
-def fetch_products_from_api(query: str, store_id: str) -> pd.DataFrame:
-    url = "https://preprod-api.lafoirfouille.fr/occ/v2/products/search/"
-    token = get_access_token()
-    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
-    cookies = {"preferredStoreCode": store_id}
-    params = {"text": query}
-
-    response = requests.get(url, headers=headers, params=params, cookies=cookies)
-    if response.status_code != 200:
-        return pd.DataFrame()
-
-    results = response.json().get("searchPageData", {}).get("results", [])
-    products = []
-    for prod in results:
-        product_id = prod.get("code")
-        promo_rate = prod.get("storeStockPrice", {}).get("promoRate", 0)
-        products.append({
-            "product_id": product_id,
-            "promo_rate": promo_rate
-        })
-    return pd.DataFrame(products)
 
 
 def personalized_ranking(user_guid: str, query: str, store_id: str) -> pd.DataFrame:
@@ -70,13 +47,13 @@ def personalized_ranking(user_guid: str, query: str, store_id: str) -> pd.DataFr
         lambda pid: score_svd(user_guid, pid, svd_matrix)
     )
 
-    # 4. Score de saisonnalité
+    # 4. Score de seasonnalité
     conn = sqlite3.connect(DB_PATH)
     df_cart = pd.read_sql_query("SELECT product_id, timestamp FROM cart_purchases", conn)
     conn.close()
     now = datetime.now(timezone.utc)
-    df_products['score_saison'] = df_products['product_id'].apply(
-        lambda pid: total_saison_score(pid, df_cart.copy(), now)
+    df_products['score_season'] = df_products['product_id'].apply(
+        lambda pid: total_season_score(pid, df_cart.copy(), now)
     )
 
     # 5. Score de tendance locale
@@ -107,7 +84,7 @@ def personalized_ranking(user_guid: str, query: str, store_id: str) -> pd.DataFr
         5 * df_products['score_promotion'] +
         0.2 * df_products['score_collaboratif'] +
         0.2 * df_products['score_svd'] +
-        0.2 * df_products['score_saison'] +
+        0.2 * df_products['score_season'] +
         0.1 * df_products['score_local_trend'] + 
         0.1 * df_products['score_global_trend'] + 
         0.3 * df_products['score_navigation_client']
@@ -118,13 +95,13 @@ def personalized_ranking(user_guid: str, query: str, store_id: str) -> pd.DataFr
 
 if __name__ == "__main__":
     ranking = personalized_ranking(
-        user_guid="ac240ae19b9b901c1f8c6addf412f1ee138604021b3dd94fd155e1155ca07be1",
-        query="console",
-        store_id="0414"
+        user_guid="b52b4e3cc61d597266d3156a1948406265df0713af92f7cd46a88bc69c0ae143",
+        query="table",
+        store_id="0008"
     )
     ranking_list = ranking['product_id'].tolist()
     print("*************calcul du score de ranking avec la somme pondérée******************")
-    print(ranking[['product_id', 'final_score', 'score_svd', 'score_promotion', 'score_collaboratif', 'score_local_trend', 'score_global_trend', 'score_saison', 'score_navigation_client']])
+    print(ranking[['product_id', 'final_score', 'score_svd', 'score_promotion', 'score_collaboratif', 'score_local_trend', 'score_global_trend', 'score_season', 'score_navigation_client']])
 
 
 #3a8ea2b9a7be61cb3633dbea6059fc1bb90f0328d006b9201455198fc8eaae40    
