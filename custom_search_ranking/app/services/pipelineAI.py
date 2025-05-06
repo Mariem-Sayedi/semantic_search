@@ -32,7 +32,7 @@ def personalized_ranking(user_guid: str, query: str, store_id: str) -> pd.DataFr
         return pd.DataFrame()
 
     product_ids = df_products['product_id'].tolist()
-
+    product_names = df_products['product_name'].tolist()
     # 2  score de promotion
     df_products['score_promotion'] = df_products['promo_rate'].apply(compute_score_promotion)
 

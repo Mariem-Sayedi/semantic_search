@@ -85,7 +85,7 @@ def get_access_token():
 
 """LFF API request"""
 
-def fetch_and_display_products(query):
+def fetch_and_display_products(query, store_id):
     access_token = get_access_token()
 
     url = "https://preprod-api.lafoirfouille.fr/occ/v2/products/search/"
@@ -93,7 +93,7 @@ def fetch_and_display_products(query):
     "Authorization": f"Bearer {access_token}",
     "Accept": "application/json"
     }
-    cookies = {"preferredStoreCode": "0414"}
+    cookies = {"preferredStoreCode": str(store_id)}
 
     params = {"text": query}
     response = requests.get(url, headers=headers, params=params, cookies=cookies)
@@ -141,7 +141,7 @@ def filtrer_termes(termes_expansion, mots_principaux):
 """5. Complete pipeline"""
 
 
-def traiter_requete(query):
+def traiter_requete(query, store_id):
     
     # Correction orthographique
     corrected_query = corriger_requete(query)
@@ -175,26 +175,29 @@ def traiter_requete(query):
     termes_tries = [terme for terme, _ in sorted(terme_sim_scores, key=lambda x: x[1], reverse=True)]
 
     # Appel API uniquement avec la requête corrigée
-    produits = fetch_and_display_products(corrected_query)
+    produits = fetch_and_display_products(corrected_query, store_id)
 
-    if not produits:
-        print("Aucun produit trouvé.")
-        return
-    # Similarité cosinus avec la requête
-    résultats = get_similar_products(produits, corrected_query)
-    print("résultats"  , résultats)
     if produits:
+      résultats = get_similar_products(produits, corrected_query)
+      response = [
+        {
+            "product_name": product.get('name', ''),
+            "product_code": product.get('code', ''),
+            "cosine_similarity": round(score, 3)
+        }
+        for product, score in résultats
+    ]
       return {
-        "corrected_query": corrected_query,
+        "query_corrected": corrected_query,
         "expanded_terms": termes_tries,
-        "products": pd.DataFrame(résultats)
-      }
+        "results": response
+    }
     else:
       return {
-        "corrected_query": corrected_query,
+        "query_corrected": corrected_query,
         "expanded_terms": termes_tries,
-        "products": pd.DataFrame()
-      }
+        "results": []
+    }
 
 
-traiter_requete("table")
+

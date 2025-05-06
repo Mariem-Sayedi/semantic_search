@@ -30,9 +30,11 @@ def fetch_products_from_api(query: str, store_id: str) -> pd.DataFrame:
     products = []
     for prod in results:
         product_id = prod.get("code")
+        product_name = prod.get("name")
         promo_rate = prod.get("storeStockPrice", {}).get("promoRate", 0)
         products.append({
             "product_id": product_id,
+            "product_name": product_name,
             "promo_rate": promo_rate
         })
     return pd.DataFrame(products)
