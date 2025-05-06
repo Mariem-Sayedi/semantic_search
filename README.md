@@ -19,8 +19,7 @@ pip install -r requirements.txt
 
 
 **4. Lancer le serveur **
-uvicorn main:app --reload
-
+uvicorn main:app --reload --port 8080
 
 **. Tester dans swagger **
 http://127.0.0.1:8080/docs

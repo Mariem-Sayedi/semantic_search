@@ -17,12 +17,46 @@ from custom_search_ranking.app.services.season_scoring import total_season_score
 from custom_search_ranking.app.services.store_trends import compute_local_trend_score
 from custom_search_ranking.app.services.LFF_trends import compute_global_trend_score
 from custom_search_ranking.app.services.predict_ranker import predict_with_model
-from custom_search_ranking.app.services.constants import RANKING_MODEL_PATH_JSON, DB_PATH
-from custom_search_ranking.app.services.search_products_api import fetch_products_from_api
+from custom_search_ranking.app.services.constants import RANKING_MODEL_PATH_JSON, DB_PATH, TOKEN_API_URL, SEARCH_API_URL
+
+
+session = requests.Session()
+
+def get_access_token():
+
+
+    response = session.get(TOKEN_API_URL)
+
+    if response.status_code == 200:
+        data = response.json()
+        return data.get("access_token")
+    return None
 
 
 
+def fetch_products_from_api(query: str, store_id: str) -> pd.DataFrame:
+   
+    token = get_access_token()
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    cookies = {"preferredStoreCode": store_id}
+    params = {"text": query}
 
+    response = requests.get(SEARCH_API_URL, headers=headers, params=params, cookies=cookies)
+    if response.status_code != 200:
+        return pd.DataFrame()
+
+    results = response.json().get("searchPageData", {}).get("results", [])
+    products = []
+    for prod in results:
+        product_id = prod.get("code")
+        product_name = prod.get("name")
+        promo_rate = prod.get("storeStockPrice", {}).get("promoRate", 0)
+        products.append({
+            "product_id": product_id,
+            "product_name": product_name,
+            "promo_rate": promo_rate
+        })
+    return pd.DataFrame(products)
 
 def personalized_ranking(user_guid: str, query: str, store_id: str) -> pd.DataFrame:
     # 1 récupérer les produits de l'API

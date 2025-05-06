@@ -1,5 +1,5 @@
 import pandas as pd
-from custom_search_ranking.app.services.search_products_api import fetch_products_from_api
+from custom_search_ranking.app.services.search_products_api import fetch_and_display_products
 
 pd.set_option("display.float_format", "{:.3f}".format)
 
@@ -11,7 +11,7 @@ def apply_promotion_score(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 if __name__ == "__main__":
-    df_promos = fetch_products_from_api("chaise", store_id='0414')
+    df_promos = fetch_and_display_products("chaise", store_id='0414')
     
     if df_promos.empty:
         print("Aucun produit trouvé.")

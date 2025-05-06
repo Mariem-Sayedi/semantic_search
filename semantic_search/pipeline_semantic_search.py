@@ -11,6 +11,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 from nltk.stem import WordNetLemmatizer
 import enchant
 from sentence_transformers import SentenceTransformer
+from custom_search_ranking.app.services.search_products_api import fetch_and_display_products
+from concurrent.futures import ThreadPoolExecutor
+
 
 
 nltk.download('wordnet') #synonymes
@@ -62,51 +65,10 @@ dico_fr = enchant.Dict("fr_FR")
 def filtrer_mots_francais(termes):
     return {mot for mot in termes if dico_fr.check(mot)}
 
+def batch_encode_terms(terms):
+    return model_sent.encode(terms, convert_to_tensor=True)
 
 
-import requests
-
-# Création d'une session persistante
-session = requests.Session()
-
-def get_access_token():
-    url = "https://preprod-api.lafoirfouille.fr/occ/v2/token"
-
-    response = session.get(url)
-
-    print("Status:", response.status_code)
-    if response.status_code == 200:
-        data = response.json()
-        return data.get("access_token")
-    return None
-
-
-
-
-"""LFF API request"""
-
-def fetch_and_display_products(query, store_id):
-    access_token = get_access_token()
-
-    url = "https://preprod-api.lafoirfouille.fr/occ/v2/products/search/"
-    headers = {
-    "Authorization": f"Bearer {access_token}",
-    "Accept": "application/json"
-    }
-    cookies = {"preferredStoreCode": str(store_id)}
-
-    params = {"text": query}
-    response = requests.get(url, headers=headers, params=params, cookies=cookies)
-
-    if response.status_code == 200:
-        products = response.json()
-        if products and 'searchPageData' in products and 'results' in products['searchPageData']:
-            product_list = products['searchPageData']['results']
-            table_data = [[p.get('name', 'code')] for p in product_list]
-            if table_data:
-              return product_list
-    print("erreur ou aucun produit trouvé.")
-    return []
 
 """4. Semantic similarity between products and query"""
 
@@ -117,7 +79,6 @@ def get_similar_products(product_list, query, threshold=0.5):
     if not product_names:
         return []
 
-    model_sent = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
     product_embeddings = model_sent.encode(product_names, convert_to_tensor=True)
     query_embedding = model_sent.encode(query, convert_to_tensor=True).reshape(1, -1)
     product_embeddings = product_embeddings.reshape(len(product_embeddings), -1)
@@ -149,12 +110,17 @@ def traiter_requete(query, store_id):
     # Extraction des mots principaux
     mots = re.findall(r'\w+', corrected_query.lower())
 
-    # Expansion : fastText + correction
-    termes_expansion = set(mots)
-    for mot in mots:
+     # Parallelized Expansion: fastText + correction
+    def expand_term(mot):
         similaires = get_similar_words(mot)
         similaires_corrigés = {corriger_requete(s).lower() for s in similaires}
-        termes_expansion.update(similaires_corrigés)
+        return similaires_corrigés
+
+    termes_expansion = set(mots)
+    with ThreadPoolExecutor() as executor:
+        expanded_terms_results = executor.map(expand_term, mots)
+    for result in expanded_terms_results:
+        termes_expansion.update(result)
 
     # Lemmatisation
     termes_expansion = lemming_termes(termes_expansion)
@@ -165,24 +131,26 @@ def traiter_requete(query, store_id):
     # Tri des termes par similarité cosinus avec la requête
     query_embedding = model_sent.encode([corrected_query])[0]
 
-    terme_sim_scores = []
-    for terme in termes_expansion:
+    def calculate_similarity(terme):
         terme_embedding = model_sent.encode([terme])[0]
         sim_score = cosine_similarity([query_embedding], [terme_embedding])[0][0]
-        terme_sim_scores.append((terme, sim_score))
+        return (terme, sim_score)
+
+    with ThreadPoolExecutor() as executor:
+        terme_sim_scores = list(executor.map(calculate_similarity, termes_expansion))
 
     # Tri décroissant
     termes_tries = [terme for terme, _ in sorted(terme_sim_scores, key=lambda x: x[1], reverse=True)]
 
     # Appel API uniquement avec la requête corrigée
     produits = fetch_and_display_products(corrected_query, store_id)
-
     if produits:
       résultats = get_similar_products(produits, corrected_query)
       response = [
         {
             "product_name": product.get('name', ''),
-            "product_code": product.get('code', ''),
+            "product_id": product.get('code', ''),
+            "promo_rate": product.get('storeStockPrice', 0).get('promoRate', 0),
             "cosine_similarity": round(score, 3)
         }
         for product, score in résultats

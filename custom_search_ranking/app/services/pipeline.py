@@ -17,13 +17,13 @@ from custom_search_ranking.app.services.season_scoring import total_season_score
 from custom_search_ranking.app.services.store_trends import compute_local_trend_score
 from custom_search_ranking.app.services.LFF_trends import compute_global_trend_score
 from custom_search_ranking.app.services.constants import DB_PATH
-from custom_search_ranking.app.services.search_products_api import fetch_products_from_api
+from custom_search_ranking.app.services.search_products_api import fetch_and_display_products
 
 
 
 def personalized_ranking(user_guid: str, query: str, store_id: str) -> pd.DataFrame:
     # 1. Récupérer les produits de l'API
-    df_products = fetch_products_from_api(query, store_id)
+    df_products = fetch_and_display_products(query, store_id)
     if df_products.empty:
         print("Aucun produit trouvé.")
         return pd.DataFrame()
