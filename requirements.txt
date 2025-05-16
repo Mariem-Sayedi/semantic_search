@@ -15,3 +15,4 @@ matplotlib
 xgboost
 tqdm
 requests
+stanza

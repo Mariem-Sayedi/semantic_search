@@ -3,6 +3,10 @@ import xgboost as xgb
 from sklearn.model_selection import train_test_split
 import pickle
 from constants import TRAINING_DATA_PATH
+import matplotlib.pyplot as plt
+from xgboost import plot_importance
+
+
 
 # 1 charger les données 
 df = pd.read_csv(TRAINING_DATA_PATH)
@@ -80,3 +84,33 @@ with open('custom_search_ranking/app/models/xgboost_ranking_model.pkl', 'wb') as
     pickle.dump(bst, f)
 
 print("Modèle XGBoost entraîné et sauvegardé avec succès !")
+
+
+
+
+# 10. Afficher et sauvegarder l'importance des features
+
+# 1. Importance par 'weight'
+plt.figure(figsize=(10, 6))
+plot_importance(bst, max_num_features=10, importance_type='weight')
+plt.title('Feature Importance - Weight (Fréquence)')
+plt.tight_layout()
+plt.savefig("custom_search_ranking/app/data/feature_importance_weight.png")
+
+# 2. Importance par 'gain'
+plt.figure(figsize=(10, 6))
+plot_importance(bst, max_num_features=10, importance_type='gain')
+plt.title('Feature Importance - Gain (Qualité)')
+plt.tight_layout()
+plt.savefig("custom_search_ranking/app/data/feature_importance_gain.png")
+
+# 3. Importance par 'cover'
+plt.figure(figsize=(10, 6))
+plot_importance(bst, max_num_features=10, importance_type='cover')
+plt.title('Feature Importance - Cover (Portée)')
+plt.tight_layout()
+plt.savefig("custom_search_ranking/app/data/feature_importance_cover.png")
+
+print("Importance des features sauvegardée.")
+plt.show()
+

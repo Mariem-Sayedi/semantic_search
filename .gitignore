@@ -4,5 +4,22 @@ __pycache__/
 *.pyc
 *.pyo
 
+*.bin
+*.db
+
 cc.fr.300.bin
 stopwords_fr.txt
+custom_search_ranking/app/data/training_data_full.csv
+custom_search_ranking/app/data/search_results_summary.csv
+LFF.db
+*.csv
+*.json
+*.jsonl
+*.jsonl.gz
+*.jsonl.gz.part
+*.jsonl.gz.part.1
+*.jsonl.gz.part.2
+*.pkl
+processed_users.txt
+*.png
+*.rar

@@ -81,13 +81,13 @@ def personalized_ranking(user_guid: str, query: str, store_id: str) -> pd.DataFr
 
      # 8. Calcul score final pondéré
     df_products['final_score'] = (
-        0.2 * df_products['score_promotion'] +
-        0.2 * df_products['score_collaboratif'] +
-        0.2 * df_products['score_svd'] +
+        0.9 * df_products['score_promotion'] +
+        0.4 * df_products['score_collaboratif'] +
+        0.3 * df_products['score_svd'] +
         0.2 * df_products['score_season'] +
-        0.1 * df_products['score_local_trend'] + 
-        0.1 * df_products['score_global_trend'] + 
-        0.3 * df_products['score_navigation_client']
+        0.2 * df_products['score_local_trend'] + 
+        0.4 * df_products['score_global_trend'] + 
+        0.8 * df_products['score_navigation_client']
     )
 
     return df_products.sort_values(by="final_score", ascending=False)

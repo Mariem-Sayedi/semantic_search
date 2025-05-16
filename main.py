@@ -6,9 +6,23 @@ from custom_search_ranking.app.services.personalized_results_AI import personali
 from custom_search_ranking.app.services.pipelineAI import personalized_ranking
 
 from semantic_search.pipeline_semantic_search import traiter_requete
+from fastapi.middleware.cors import CORSMiddleware
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from fastapi import HTTPException
+from data_collection.models import Event, SearchEvent, ViewedProduct, ViewedCategory, Boost
+from data_collection.storage_bd_sql import save_event, get_all_events, save_search_query, save_viewed_product, save_viewed_category, save_admin_boost, save_update_admin_boost, save_delete_admin_boost, get_admin_boost_by_id, get_all_admin_boosts
+
 
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],  # autoriser ttes les méthodes
+    allow_headers=["*"],
+)
+
 
 
 
@@ -97,7 +111,14 @@ def semantic_customized_ranking(store_id, query: str = Query(...), user_guid: st
         {
             "product_name": row["product_name"],
             "product_id": row["product_id"],
-            "predicted_score": round(row["predicted_score"], 3)
+            "predicted_score": round(row["predicted_score"], 3),
+            "product_url": row["product_url"],
+            "promo_rate": row["promo_rate"],
+            "product_brand": row["product_brand"],
+            "image_url": row["image_url"],
+            "price": row["price"],
+            "gross_price": row["gross_price"],
+            "store_stock_price": row["store_stock_price"],
         }
         for _, row in ranked_products.iterrows()
     ]
@@ -108,3 +129,121 @@ def semantic_customized_ranking(store_id, query: str = Query(...), user_guid: st
         "results": results,
         "response_time_seconds": response_time
     })
+
+
+
+
+
+
+
+
+
+
+
+@app.post("/track-event", status_code=201)
+async def track_event(event: Event):
+    """Suivre un événement utilisateur (ajout au panier, achat...)"""
+    try:
+        save_event(event.model_dump())
+
+        return {"status": "success", "message": "Event tracked successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error tracking event: {str(e)}")
+    
+
+@app.post("/track-product", status_code=201)
+async def track_product(viewedProduct: ViewedProduct):
+    """Suivre un événement utilisateur: vue produit"""
+    try:
+        save_viewed_product(viewedProduct.model_dump()) 
+        return {"status": "success", "message": "Viewed product tracked successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error tracking viewed product: {str(e)}")
+    
+@app.post("/track-category", status_code=201)
+async def track_category(viewedCategory: ViewedCategory):
+    """Suivre un événement utilisateur: vue categorie"""
+    try:
+        save_viewed_category(viewedCategory.model_dump()) 
+        return {"status": "success", "message": "Viewed categorie tracked successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error tracking viewed categorie: {str(e)}")
+
+
+@app.get("/events")
+async def get_events():
+    """Obtenir tous les événements enregistrés"""
+    try:
+        events = get_all_events()
+        return {"status": "success", "events": events}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving events: {str(e)}")
+
+
+
+@app.post("/search", status_code=201)
+async def track_search(search_event: SearchEvent):
+    """Suivre les recherches effectuées par un utilisateur"""
+    try:
+        # Sauvegarde de l'événement de recherche
+        save_search_query(search_event.model_dump()) 
+        return {"status": "success", "message": "Search tracked successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error tracking search: {str(e)}")
+
+@app.post("/admin/boosts/")
+def create_admin_boost(boost: Boost):
+    """créer un boost de score """
+    try:
+        # Sauvegarde du boost admin
+        save_admin_boost(boost.model_dump()) 
+        return {"status": "success", "message": "Score boost created successfully", "boost": boost}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating boost: {str(e)}")
+    
+
+@app.put("/admin/boosts/{boost_id}")
+def update_admin_boost(boost_id: int, boost: Boost):
+    """Mettre à jour un boost de score"""
+    try:
+        save_update_admin_boost(boost_id, boost.model_dump()) 
+        updated_boost = get_admin_boost_by_id(boost_id)
+        return {"status": "success", "message": "Score boost updated successfully", "boost": updated_boost}
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating boost: {str(e)}")
+
+
+@app.delete("/admin/boosts/{boost_id}")
+def delete_admin_boost(boost_id: int):
+    """Supprimer un boost de score"""
+    try:
+        save_delete_admin_boost(boost_id)
+        return {"status": "success", "message": "Score boost deleted successfully"}
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting boost: {str(e)}")
+
+@app.get("/admin/boosts/{boost_id}")
+def read_admin_boost(boost_id: int):
+    """Route pour récupérer un boost par ID"""
+    try:
+        boost = get_admin_boost_by_id(boost_id)
+        return {"status": "success", "boosts": boost}
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur serveur : {str(e)}")
+
+
+
+@app.get("/admin/boosts")
+def read_all_admin_boosts():
+    """Route pour récupérer tous les boosts"""
+    try:
+        boosts = get_all_admin_boosts()
+        return {"status": "success", "boosts": boosts}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur serveur : {str(e)}")

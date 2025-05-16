@@ -2,7 +2,7 @@ import pandas as pd
 import xgboost as xgb
 import pickle
 
-model_path = 'custom_search_ranking/app/models/xgboost_ranking_model1627.json'
+model_path = 'custom_search_ranking/app/models/xgboost_ranking_model.json'
 bst = xgb.Booster()
 bst.load_model(model_path)
 

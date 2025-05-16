@@ -1,53 +1,65 @@
 import fasttext
-from spellchecker import SpellChecker
-from nltk.corpus import wordnet as wn
-import nltk
 import re
-import requests
-import time
-import pandas as pd
-import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
-from nltk.stem import WordNetLemmatizer
+import nltk
+import stanza
 import enchant
+from spellchecker import SpellChecker
+from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
 from custom_search_ranking.app.services.search_products_api import fetch_and_display_products
 from concurrent.futures import ThreadPoolExecutor
+from functools import lru_cache
+from nltk.stem import WordNetLemmatizer
 
 
 
-nltk.download('wordnet') #synonymes
-nltk.download('omw-1.4')
-nltk.download('punkt') #lemming
+# Setup unique
+nltk.download('punkt', quiet=True)
+nltk.download('wordnet', quiet=True)
+nltk.download('omw-1.4', quiet=True)
+stanza.download('fr', processors='tokenize,pos,lemma', verbose=False)
 
+# Initialisation une fois
 spell = SpellChecker(language='fr')
-model_sent = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+dico_fr = enchant.Dict("fr_FR")
+nlp_fr = stanza.Pipeline(lang='fr', processors='tokenize,pos,lemma', use_gpu=False, verbose=False)
 
+# Chargement stopwords
+with open("semantic_search/stopwords_fr.txt", "r", encoding="utf-8") as f:
+    stopwords_fr = set(line.strip().lower() for line in f if line.strip())
 
-"""1. spell checking"""
+@lru_cache(maxsize=1)
+def get_fasttext_model():
+    return fasttext.load_model('semantic_search/cc.fr.300.bin')
 
-def corriger_requete(query):
-    mots = query.split()
-    mots_corrigés = [spell.correction(mot) or mot for mot in mots]
-    return " ".join(mots_corrigés)
+@lru_cache(maxsize=1)
+def get_sentence_model():
+    return SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 
+def corriger_requete(query: str) -> str:
+    return " ".join(spell.correction(mot) or mot for mot in query.split())
 
-"""3. getting similar words"""
-
-fasttext_model = fasttext.load_model('semantic_search/cc.fr.300.bin')
-
-def get_similar_words(word, k=5):
+def get_similar_words(word: str, k=5, threshold=0.5):
     try:
-        if word not in fasttext_model.words:
+        model = get_fasttext_model()
+        if word not in model.words:
             return []
-        similar = fasttext_model.get_nearest_neighbors(word, k)
-        return [w for _, w in similar]
-    except Exception as e:
-        print(f"Erreur avec fastText pour le mot '{word}': {e}")
+        voisins = model.get_nearest_neighbors(word)
+        return [w for score, w in voisins if score >= threshold and w != word][:k]
+    except Exception:
         return []
 
+def filtrer_mots_francais(termes):
+    return {mot for mot in termes if dico_fr.check(mot)}
 
-"""Lemming"""
+def process_with_stanza(termes):
+    noms = set()
+    doc = nlp_fr(' '.join(termes))
+    for sentence in doc.sentences:
+        for word in sentence.words:
+            if word.upos != 'VERB':
+                noms.add(word.text.lower())
+    return noms
 
 
 lemmatizer = WordNetLemmatizer()
@@ -60,112 +72,73 @@ def lemming_termes(termes):
     return termes_lemmés
 
 
-dico_fr = enchant.Dict("fr_FR")
-
-def filtrer_mots_francais(termes):
-    return {mot for mot in termes if dico_fr.check(mot)}
-
-def batch_encode_terms(terms):
-    return model_sent.encode(terms, convert_to_tensor=True)
-
-
-
-"""4. Semantic similarity between products and query"""
-
-
-
-def get_similar_products(product_list, query, threshold=0.5):
-    product_names = [product.get('name', '') for product in product_list]
-    if not product_names:
-        return []
-
-    product_embeddings = model_sent.encode(product_names, convert_to_tensor=True)
-    query_embedding = model_sent.encode(query, convert_to_tensor=True).reshape(1, -1)
-    product_embeddings = product_embeddings.reshape(len(product_embeddings), -1)
-
-    cosine_scores = cosine_similarity(query_embedding, product_embeddings)[0]
-
-    results = [
-        (product_list[i], float(cosine_scores[i]))
-        for i in range(len(product_list))
-        if cosine_scores[i] > threshold
-    ]
-    results.sort(key=lambda x: x[1], reverse=True)
-    return results
-
-
-def filtrer_termes(termes_expansion, mots_principaux):
-    # garder les termes qui sont plus proches de la requête principale
-    termes_filtres = {terme for terme in termes_expansion if any(mot in terme for mot in mots_principaux)}
-    return termes_filtres
-
-"""5. Complete pipeline"""
 
 
 def traiter_requete(query, store_id):
-    
-    # Correction orthographique
+    query = query.lower()
     corrected_query = corriger_requete(query)
+    mots = re.findall(r'\w+', corrected_query)
 
-    # Extraction des mots principaux
-    mots = re.findall(r'\w+', corrected_query.lower())
-
-     # Parallelized Expansion: fastText + correction
-    def expand_term(mot):
+    # Expansion des termes + correction dans un threadpool
+    def expand(mot):
         similaires = get_similar_words(mot)
-        similaires_corrigés = {corriger_requete(s).lower() for s in similaires}
-        return similaires_corrigés
+        return set(similaires)
 
     termes_expansion = set(mots)
     with ThreadPoolExecutor() as executor:
-        expanded_terms_results = executor.map(expand_term, mots)
-    for result in expanded_terms_results:
-        termes_expansion.update(result)
+        for result in executor.map(expand, mots):
+            termes_expansion.update(result)
 
-    # Lemmatisation
-    termes_expansion = lemming_termes(termes_expansion)
+    # NLP + Lemmatisation + noms
+    termes_noms = process_with_stanza(termes_expansion)
+    termes_noms = filtrer_mots_francais(termes_noms)
 
-    # Filtrage par dictionnaire français
-    termes_expansion = filtrer_mots_francais(termes_expansion)
+    termes_noms = lemming_termes(termes_noms)
 
-    # Tri des termes par similarité cosinus avec la requête
-    query_embedding = model_sent.encode([corrected_query])[0]
+    if not termes_noms:
+        return {"query_corrected": corrected_query, "expanded_terms": [], "results": []}
 
-    def calculate_similarity(terme):
-        terme_embedding = model_sent.encode([terme])[0]
-        sim_score = cosine_similarity([query_embedding], [terme_embedding])[0][0]
-        return (terme, sim_score)
+    # Similarité sémantique
+    model_sent = get_sentence_model()
+    termes_list = list(termes_noms)
+    embeddings = model_sent.encode(termes_list + [corrected_query], convert_to_tensor=False)
+    query_embedding = embeddings[-1]
+    termes_embeddings = embeddings[:-1]
 
-    with ThreadPoolExecutor() as executor:
-        terme_sim_scores = list(executor.map(calculate_similarity, termes_expansion))
+    sim_scores = cosine_similarity([query_embedding], termes_embeddings)[0]
+    termes_tries = [terme for terme, _ in sorted(zip(termes_list, sim_scores), key=lambda x: x[1], reverse=True)]
 
-    # Tri décroissant
-    termes_tries = [terme for terme, _ in sorted(terme_sim_scores, key=lambda x: x[1], reverse=True)]
+    # Récupération produits
+    produits_df = fetch_and_display_products(corrected_query, store_id)
 
-    # Appel API uniquement avec la requête corrigée
-    produits = fetch_and_display_products(corrected_query, store_id)
-    if produits:
-      résultats = get_similar_products(produits, corrected_query)
-      response = [
-        {
-            "product_name": product.get('name', ''),
-            "product_id": product.get('code', ''),
-            "promo_rate": product.get('storeStockPrice', 0).get('promoRate', 0),
-            "cosine_similarity": round(score, 3)
-        }
-        for product, score in résultats
-    ]
-      return {
+    if produits_df.empty:
+        return {"query_corrected": corrected_query, "expanded_terms": termes_tries, "results": []}
+
+    product_names = produits_df["product_name"].tolist()
+    all_embeddings = model_sent.encode(product_names + [corrected_query], convert_to_tensor=False)
+    product_embeddings = all_embeddings[:-1]
+    query_embedding = all_embeddings[-1]
+
+    scores = cosine_similarity([query_embedding], product_embeddings)[0]
+    produits_df["semantic_similarity"] = scores
+    produits_df = produits_df[produits_df["semantic_similarity"] > 0.3]
+    produits_df = produits_df.sort_values(by="semantic_similarity", ascending=False)
+
+    results = produits_df.apply(lambda row: {
+        "product_name": row["product_name"],
+        "product_id": row["product_id"],
+        "product_url": row["product_url"],
+        "promo_rate": row["promo_rate"],
+        "product_brand": row["product_brand"],
+        "image_url": row["image_url"],
+        "price": row["price"],
+        "gross_price": row["gross_price"],
+        "store_stock_price": row["store_stock_price"],
+        "semantic_similarity": round(row["semantic_similarity"], 3)
+    }, axis=1).tolist()
+
+    return {
         "query_corrected": corrected_query,
         "expanded_terms": termes_tries,
-        "results": response
+        "results": results
     }
-    else:
-      return {
-        "query_corrected": corrected_query,
-        "expanded_terms": termes_tries,
-        "results": []
-    }
-
-
-

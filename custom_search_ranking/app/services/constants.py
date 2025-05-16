@@ -1,6 +1,6 @@
 # modèle entraîné
-RANKING_MODEL_PATH = "custom_search_ranking/app/models/xgboost_ranking_model1627.pkl"
-RANKING_MODEL_PATH_JSON = "custom_search_ranking/app/models/xgboost_ranking_model1627.json"
+RANKING_MODEL_PATH = "custom_search_ranking/app/models/xgboost_ranking_model.pkl"
+RANKING_MODEL_PATH_JSON = "custom_search_ranking/app/models/xgboost_ranking_model.json"
 
 
 # base de données SQLite

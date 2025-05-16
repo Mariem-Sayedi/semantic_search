@@ -44,7 +44,7 @@ def evaluate_per_user(df, model_path):
 
     if not ndcg_scores:
         print(" pas assez de données")
-        return
+        
 
     mean_ndcg = np.mean(ndcg_scores)
 
