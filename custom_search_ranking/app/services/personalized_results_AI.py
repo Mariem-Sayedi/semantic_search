@@ -117,6 +117,18 @@ def personalize_ranking(user_guid: str, df_products: pd.DataFrame, store_id: str
     # 7. Score final prédictif
     df_products['predicted_score'] = predict_with_model(df_products, RANKING_MODEL_PATH_JSON) + df_products["boost_score"]
 
+    #8. Attribuer des badges
+    def assign_badges(row):
+        badges = []
+        if row['score_global_trend'] >= 0.01:
+            badges.append("🔥 Tendance")
+        if row['score_svd'] >= 0.3:
+            badges.append("💡 Recommandé pour vous")
+        if row['score_navigation_client'] >= 0.3:
+            badges.append("⏱️ Visité récemment")
+        return badges
+    
+    df_products['badges'] = df_products.apply(assign_badges, axis=1)
     # 8. Tri final
     df_products = df_products.sort_values(by="predicted_score", ascending=False)
     print(df_products[['product_id', 'product_name', 'predicted_score', 'score_svd', 'score_promotion', 'promo_rate', 'score_collaboratif', 'score_local_trend', 'score_global_trend', 'score_season', 'score_navigation_client', 'boost_score']])

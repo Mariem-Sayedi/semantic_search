@@ -119,6 +119,7 @@ def semantic_customized_ranking(store_id, query: str = Query(...), user_guid: st
             "price": row["price"],
             "gross_price": row["gross_price"],
             "store_stock_price": row["store_stock_price"],
+            "badges": row["badges"],
         }
         for _, row in ranked_products.iterrows()
     ]
@@ -191,13 +192,13 @@ async def track_search(search_event: SearchEvent):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error tracking search: {str(e)}")
 
-@app.post("/admin/boosts/")
+@app.post("/admin/boosts/", status_code=201)
 def create_admin_boost(boost: Boost):
     """créer un boost de score """
     try:
         # Sauvegarde du boost admin
-        save_admin_boost(boost.model_dump()) 
-        return {"status": "success", "message": "Score boost created successfully", "boost": boost}
+       save_admin_boost(boost.model_dump()) 
+       return {"status": "success", "message": "Score boost created successfully", "boost": boost}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating boost: {str(e)}")
     

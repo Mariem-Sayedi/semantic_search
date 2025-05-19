@@ -2,8 +2,7 @@ import sqlite3
 from fastapi import HTTPException
 from custom_search_ranking.app.services.constants import DB_PATH
 
-
-
+DB_PATH = "custom_search_ranking/app/data/LFF.db"
 
 conn = sqlite3.connect(DB_PATH)
 cursor = conn.cursor()
@@ -78,6 +77,7 @@ conn.commit()
 
 import json
 
+
 def save_admin_boost(boost: dict):
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
@@ -117,6 +117,8 @@ def save_update_admin_boost(boost_id: int, boost: dict):
             boost_id
         ))
         conn.commit()
+
+
 
 def save_delete_admin_boost(boost_id: int):
     with sqlite3.connect(DB_PATH) as conn:
@@ -219,7 +221,7 @@ def show_table_data(table_name):
 
 # import sqlite3
 
-# DB_PATH = "data/LFF.db"
+# DB_PATH = "custom_search_ranking/app/data/LFF.db"
 
 # with sqlite3.connect(DB_PATH) as conn:
 #     cursor = conn.cursor()

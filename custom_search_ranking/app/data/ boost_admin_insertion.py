@@ -14,18 +14,19 @@ cursor = conn.cursor()
 
 
 # Step 1: Create a new table with the correct column types
-# cursor.execute('''
-#   CREATE TABLE admin_boosts (
-#     id INTEGER PRIMARY KEY AUTOINCREMENT,
-#     target_type TEXT,
-#     target_id INTEGER,
-#     store_id TEXT,
-#     boost_score REAL,
-#     start_date DATETIME,
-#     end_date DATETIME
-# );
+cursor.execute('''
+  CREATE TABLE admin_boosts (
+    boost_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    target_type TEXT,
+    target_id INTEGER,
+    store_id TEXT,
+    boost_score REAL,
+    start_date DATETIME,
+    end_date DATETIME,
+    timestamp TEXT        
+);
 
-# ''')
+''')
 
 
 # 3. Liste unique de produits
@@ -52,15 +53,16 @@ for pid in product_ids:
     boost_score = round(random.uniform(1, 5), 2)
 
     cursor.execute('''
-        INSERT INTO admin_boosts (target_type, target_id, store_id, boost_score, start_date, end_date)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO admin_boosts (target_type, target_id, store_id, boost_score, start_date, end_date, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     ''', (
         'Produit',
         pid,
         '0008',
         boost_score,
         start_date,
-        end_date
+        end_date, 
+        datetime.utcnow()
     ))
 
 # 5. Commit & close
