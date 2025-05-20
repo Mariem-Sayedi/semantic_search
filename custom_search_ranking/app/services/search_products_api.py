@@ -16,7 +16,10 @@ def get_access_token():
         return data.get("access_token")
     return None
 
-def fetch_and_display_products(query, store_id):
+
+
+
+def fetch_and_display_products(query, store_id, page=0):
     access_token = get_access_token()
 
     
@@ -26,12 +29,14 @@ def fetch_and_display_products(query, store_id):
     }
     cookies = {"preferredStoreCode": str(store_id)}
 
-    params = {"text": query}
+    params = {"q": query, "page": page}
     response = requests.get(SEARCH_API_URL, headers=headers, params=params, cookies=cookies)
     if response.status_code != 200:
         return pd.DataFrame()
 
     raw_results = response.json().get("searchPageData", {}).get("results", [])
+    pagination = response.json().get("searchPageData", {}).get("pagination", [])
+
 
     products = []
     for item in raw_results:
@@ -59,4 +64,4 @@ def fetch_and_display_products(query, store_id):
             "store_stock_price": store_stock_price
         })
 
-    return pd.DataFrame(products)
+    return pd.DataFrame(products), pagination

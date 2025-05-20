@@ -57,33 +57,35 @@ def customized_search(store_id, query: str = Query(...), user_guid: str = Query(
 
 
 @app.get("/semantic-search")
-def semantic_search(store_id, query: str = Query(...)):
+def semantic_search(store_id, page, query: str = Query(...)):
     start_time = time.time()
-    semantic_output = traiter_requete(query, store_id)
+    semantic_output = traiter_requete(query, store_id, page)
     corrected_query = semantic_output["query_corrected"]
     expanded_terms = semantic_output["expanded_terms"]
     semantic_df_products = semantic_output["results"]
     end_time = time.time()
     response_time = round(end_time - start_time, 3)
-    
+    pagination = semantic_output["pagination"]
     return {
         "query_corrected": corrected_query,
         "expanded_terms": expanded_terms,
         "results": semantic_df_products,
-        "response_time": response_time
+        "response_time": response_time,
+        "pagination": pagination
     }
 
 
 
 @app.get("/semantic-customized-ranking")
-def semantic_customized_ranking(store_id, query: str = Query(...), user_guid: str = Query(...)):
+def semantic_customized_ranking(store_id, page, query: str = Query(...), user_guid: str = Query(...)):
     start_time = time.time()
 
     # Step 1: Perform semantic search
-    semantic_output = traiter_requete(query, store_id)
+    semantic_output = traiter_requete(query, store_id, page)
     corrected_query = semantic_output["query_corrected"]
     expanded_terms = semantic_output["expanded_terms"]
     semantic_df_products = semantic_output["results"]
+    pagination = semantic_output["pagination"]
     # Step 2: Perform personalized ranking on semantic search results
     if not semantic_df_products:
         return JSONResponse(content={
@@ -128,7 +130,8 @@ def semantic_customized_ranking(store_id, query: str = Query(...), user_guid: st
         "query_corrected": corrected_query,
         "expanded_terms": expanded_terms,
         "results": results,
-        "response_time_seconds": response_time
+        "response_time_seconds": response_time,
+        "pagination": pagination
     })
 
 

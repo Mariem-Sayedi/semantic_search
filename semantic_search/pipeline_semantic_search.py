@@ -74,7 +74,7 @@ def lemming_termes(termes):
 
 
 
-def traiter_requete(query, store_id):
+def traiter_requete(query, store_id, page):
     query = query.lower()
     corrected_query = corriger_requete(query)
     mots = re.findall(r'\w+', corrected_query)
@@ -109,7 +109,7 @@ def traiter_requete(query, store_id):
     termes_tries = [terme for terme, _ in sorted(zip(termes_list, sim_scores), key=lambda x: x[1], reverse=True)]
 
     # Récupération produits
-    produits_df = fetch_and_display_products(corrected_query, store_id)
+    produits_df, pagination = fetch_and_display_products(corrected_query, store_id, page)
 
     if produits_df.empty:
         return {"query_corrected": corrected_query, "expanded_terms": termes_tries, "results": []}
@@ -140,5 +140,6 @@ def traiter_requete(query, store_id):
     return {
         "query_corrected": corrected_query,
         "expanded_terms": termes_tries,
-        "results": results
+        "results": results,
+        "pagination": pagination
     }
