@@ -6,7 +6,7 @@ import enchant
 from spellchecker import SpellChecker
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
-from custom_search_ranking.app.services.search_products_api import fetch_and_display_products
+from custom_search_ranking.app.services.search_products_api import fetch_all_products
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from nltk.stem import WordNetLemmatizer
@@ -39,7 +39,7 @@ def get_sentence_model():
 def corriger_requete(query: str) -> str:
     return " ".join(spell.correction(mot) or mot for mot in query.split())
 
-def get_similar_words(word: str, k=5, threshold=0.5):
+def get_similar_words(word: str, k=7, threshold=0.5):
     try:
         model = get_fasttext_model()
         if word not in model.words:
@@ -74,7 +74,7 @@ def lemming_termes(termes):
 
 
 
-def traiter_requete(query, store_id, page):
+def traiter_requete(query, store_id):
     query = query.lower()
     corrected_query = corriger_requete(query)
     mots = re.findall(r'\w+', corrected_query)
@@ -109,7 +109,7 @@ def traiter_requete(query, store_id, page):
     termes_tries = [terme for terme, _ in sorted(zip(termes_list, sim_scores), key=lambda x: x[1], reverse=True)]
 
     # Récupération produits
-    produits_df, pagination = fetch_and_display_products(corrected_query, store_id, page)
+    produits_df, pagination = fetch_all_products(corrected_query, store_id)
 
     if produits_df.empty:
         return {"query_corrected": corrected_query, "expanded_terms": termes_tries, "results": []}

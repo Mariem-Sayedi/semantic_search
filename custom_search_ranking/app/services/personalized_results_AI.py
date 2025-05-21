@@ -134,3 +134,4 @@ def personalize_ranking(user_guid: str, df_products: pd.DataFrame, store_id: str
     print(df_products[['product_id', 'product_name', 'predicted_score', 'score_svd', 'score_promotion', 'promo_rate', 'score_collaboratif', 'score_local_trend', 'score_global_trend', 'score_season', 'score_navigation_client', 'boost_score']])
 
     return df_products
+
