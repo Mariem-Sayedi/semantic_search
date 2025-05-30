@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import datetime, timedelta, timezone
 import sqlite3
-from custom_search_ranking.app.services.constants import DB_PATH
+from constants import DB_PATH
 
 
 

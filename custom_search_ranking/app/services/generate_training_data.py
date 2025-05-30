@@ -4,7 +4,7 @@ from pipeline import personalized_ranking
 from tqdm import tqdm
 import time
 import os
-from custom_search_ranking.app.services.constants import DB_PATH, PROCESSED_USERS_FILE
+from constants import DB_PATH, PROCESSED_USERS_FILE
 
 
 

@@ -1,10 +1,10 @@
 import requests
 import sqlite3
 from datetime import datetime, timezone
-from custom_search_ranking.app.services.user_interaction import compute_normalized_user_interaction_scores
+from user_interaction import compute_normalized_user_interaction_scores
 import pandas as pd
-from custom_search_ranking.app.services.promo_scoring import compute_score_promotion
-from custom_search_ranking.app.services.user_product_matrix import (
+from promo_scoring import compute_score_promotion
+from user_product_matrix import (
     load_views_from_db, 
     build_user_product_matrix_from_df,
     compute_user_similarity_matrix, 
@@ -13,11 +13,11 @@ from custom_search_ranking.app.services.user_product_matrix import (
     score_svd,
     # print_user_history
 )
-from custom_search_ranking.app.services.season_scoring import total_season_score
-from custom_search_ranking.app.services.store_trends import compute_local_trend_score
-from custom_search_ranking.app.services.LFF_trends import compute_global_trend_score
-from custom_search_ranking.app.services.constants import DB_PATH
-from custom_search_ranking.app.services.search_products_api import fetch_and_display_products
+from season_scoring import total_season_score
+from store_trends import compute_local_trend_score
+from LFF_trends import compute_global_trend_score
+from constants import DB_PATH
+from search_products_api import fetch_and_display_products
 
 
 

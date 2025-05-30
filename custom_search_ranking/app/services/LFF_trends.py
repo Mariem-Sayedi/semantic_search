@@ -1,6 +1,6 @@
 import sqlite3
 import pandas as pd
-from custom_search_ranking.app.services.constants import DB_PATH
+from constants import DB_PATH
 
 
 pd.set_option("display.float_format", "{:.3f}".format)

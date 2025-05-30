@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.decomposition import TruncatedSVD
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
-from custom_search_ranking.app.services.constants import DB_PATH
+from constants import DB_PATH
 
 
 

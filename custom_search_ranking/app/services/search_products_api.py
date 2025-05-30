@@ -1,6 +1,6 @@
 import requests
 import pandas as pd
-from custom_search_ranking.app.services.constants import TOKEN_API_URL, SEARCH_API_URL
+from constants import TOKEN_API_URL, SEARCH_API_URL
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 session = requests.Session()
