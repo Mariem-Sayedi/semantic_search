@@ -1,6 +1,7 @@
 import sqlite3
 from fastapi import HTTPException
 from custom_search_ranking.app.services.constants import DB_PATH
+from typing import List, Dict
 
 DB_PATH = "custom_search_ranking/app/data/LFF.db"
 
@@ -190,6 +191,37 @@ def save_search_query(search_query: dict):
         cursor.execute("INSERT INTO searches (user_guid, user_id, search_query, store_id, timestamp) VALUES (?, ?, ?, ?, ?)", 
                        (search_query["user_guid"], search_query["user_id"], search_query["search_query"],  search_query["store_id"], search_query["timestamp"]))
         conn.commit()
+
+
+
+
+def search_targets_in_db(q: str, type_: str) -> List[Dict]:
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            if type_ == "Produit":
+                cursor.execute("""
+                    SELECT DISTINCT product_id as id, summary as name 
+                    FROM product_views 
+                    WHERE product_id LIKE ? OR summary LIKE ?
+                    LIMIT 10
+                """, (f"%{q}%", f"%{q}%"))
+            else:
+                cursor.execute("""
+                    SELECT DISTINCT category as id, category as name 
+                    FROM category_views 
+                    WHERE category LIKE ?
+                    LIMIT 10
+                """, (f"%{q}%",))
+            
+            results = cursor.fetchall()
+            return [dict(row) for row in results]
+
+    except Exception as e:
+        raise Exception(f"Database error: {str(e)}")
+    
 
 # import os
 

@@ -39,7 +39,7 @@ def get_sentence_model():
 def corriger_requete(query: str) -> str:
     return " ".join(spell.correction(mot) or mot for mot in query.split())
 
-def get_similar_words(word: str, k=7, threshold=0.5):
+def get_similar_words(word: str, k=8, threshold=0.5):
     try:
         model = get_fasttext_model()
         if word not in model.words:

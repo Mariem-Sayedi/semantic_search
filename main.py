@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from fastapi import HTTPException
 from data_collection.models import Event, SearchEvent, ViewedProduct, ViewedCategory, Boost
-from data_collection.storage_bd_sql import save_event, get_all_events, save_search_query, save_viewed_product, save_viewed_category, save_admin_boost, save_update_admin_boost, save_delete_admin_boost, get_admin_boost_by_id, get_all_admin_boosts
+from data_collection.storage_bd_sql import search_targets_in_db, save_event, get_all_events, save_search_query, save_viewed_product, save_viewed_category, save_admin_boost, save_update_admin_boost, save_delete_admin_boost, get_admin_boost_by_id, get_all_admin_boosts
 import math
 
 
@@ -265,3 +265,14 @@ def read_all_admin_boosts():
         return {"status": "success", "boosts": boosts}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur serveur : {str(e)}")
+    
+
+
+
+@app.get("/admin/search-targets")
+async def search_targets(q: str, type: str):
+    """Endpoint pour rechercher des produits/catégories pour les boosts"""
+    try:
+        return search_targets_in_db(q, type)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

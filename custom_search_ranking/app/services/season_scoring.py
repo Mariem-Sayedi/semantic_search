@@ -8,7 +8,8 @@ from custom_search_ranking.app.services.constants import DB_PATH
 pd.set_option("display.float_format", "{:.3f}".format)
 
 def calculate_week_store(product_id: str, df: pd.DataFrame, current_date: datetime) -> float:
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True, errors='coerce')
+
     start_week = current_date - timedelta(days=7)
     df_week = df[df['timestamp'] >= start_week]
 
@@ -18,7 +19,8 @@ def calculate_week_store(product_id: str, df: pd.DataFrame, current_date: dateti
 
 
 def calculate_season_score(product_id: str, df: pd.DataFrame, current_date: datetime) -> float:
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True, errors='coerce')
+
     start_season = current_date - timedelta(days=90)
     df_season = df[df['timestamp'] >= start_season]
 
